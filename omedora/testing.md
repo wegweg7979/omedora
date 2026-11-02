@@ -133,6 +133,10 @@ The runner builds `omedora-test:fedora44` (`omedora-test:fedora45` with
 This validates package-map behavior and Fedora-specific setup with real dnf/rpm
 tools. Use `--rebuild` after changing the test image.
 
+This runner, `run-smoke.sh` and `run-release-upgrade.sh` use Docker when its
+daemon answers and rootless Podman otherwise; set `OMEDORA_CONTAINER_ENGINE` to
+choose one (`omedora/test/fedora/lib/engine.sh`).
+
 ### Arch contract
 
 ```bash

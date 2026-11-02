@@ -30,6 +30,7 @@ set -euo pipefail
 
 REPO=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)
 . "$REPO/omedora/test/fedora/lib/release.sh"
+. "$REPO/omedora/test/fedora/lib/engine.sh"
 . "$REPO/omedora/test/fedora/lib/local-repo.sh"
 IMAGE="${OMEDORA_TEST_IMAGE:-$OMEDORA_TEST_TAG}"
 
@@ -86,11 +87,11 @@ if $local_repo; then
   )
 fi
 
-if $rebuild || ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+if $rebuild || ! "$OMEDORA_CONTAINER_ENGINE" image inspect "$IMAGE" >/dev/null 2>&1; then
   echo "Building $IMAGE..."
-  docker build -t "$IMAGE" --build-arg "FEDORA_RELEASE=$OMEDORA_FEDORA_RELEASE" \
+  "$OMEDORA_CONTAINER_ENGINE" build -t "$IMAGE" --build-arg "FEDORA_RELEASE=$OMEDORA_FEDORA_RELEASE" \
     -f "$REPO/omedora/test/fedora/Dockerfile" "$REPO/omedora/test/fedora/"
 fi
 
-exec docker run "${run_args[@]}" \
+exec "$OMEDORA_CONTAINER_ENGINE" run "${run_args[@]}" \
   "$IMAGE" bash "/repo/omedora/test/fedora/$script"

@@ -1,20 +1,32 @@
 #!/bin/bash
 
-# omarchy:summary=Print the detected host distribution token (arch|fedora)
+# omarchy:summary=Print the detected host distribution token (arch|fedora|fedora-ostree)
 # omarchy:examples=omarchy distro
 # omarchy:hidden=true
 
-# Detect the host distribution and emit exactly one of: arch, fedora.
+# Detect the host distribution and emit exactly one of: arch, fedora,
+# fedora-ostree.
+#   - fedora-ostree: a Fedora family host booted from an ostree/bootc
+#     deployment (/run/ostree-booted present). Used to dispatch the immutable
+#     code paths. A baked image is a Fedora host, so ID/ID_LIKE still match
+#     Fedora; the presence of the deployment marker is what selects the
+#     immutable branch.
+#   - fedora: mutable Fedora Workstation (dnf persists to /usr).
+#   - arch: upstream Arch.
 # Used by every helper that needs distro-aware dispatch.
 #
 # Resolution order:
 #   1. $OMARCHY_DISTRO (escape hatch — lets devs force a code path)
-#   2. /etc/os-release ID field (arch | fedora)
-#   3. /etc/os-release ID_LIKE field (matches "arch" or "fedora" tokens)
-#   4. Exit 1 with an error if nothing matches
+#   2. $OMARCHY_OSTREE_MARKER (test seam; default /run/ostree-booted). If the
+#      host is a Fedora-family bootc/ostree deployment, emit fedora-ostree.
+#   3. /etc/os-release ID field (arch | fedora), prompting the same
+#      ostree-marker check for the fedora token.
+#   4. /etc/os-release ID_LIKE field (matches "arch" or "fedora" tokens)
+#   5. Exit 1 with an error if nothing matches
 #
 # For tests: set $OMARCHY_OS_RELEASE_PATH to point at a fixture file
-# instead of /etc/os-release.
+# instead of /etc/os-release, and $OMARCHY_OSTREE_MARKER to a fixture marker
+# (or empty to force the mutable path).
 
 set -eu
 
@@ -24,6 +36,14 @@ if [[ -n ${OMARCHY_DISTRO:-} ]]; then
 fi
 
 os_release="${OMARCHY_OS_RELEASE_PATH:-/etc/os-release}"
+# A marker set to empty must mean "force the mutable path" (tests, or a host
+# that wants to opt out), not "unset". So use ${VAR-...} (no colon): it only
+# falls back when the variable is unset, not when it is empty.
+if [[ -n ${OMARCHY_OSTREE_MARKER+x} ]]; then
+  ostree_marker="$OMARCHY_OSTREE_MARKER"
+else
+  ostree_marker="/run/ostree-booted"
+fi
 
 if [[ ! -r $os_release ]]; then
   echo "omarchy-distro: cannot read $os_release" >&2
@@ -44,9 +64,19 @@ while IFS='=' read -r key value; do
   esac
 done <"$os_release"
 
+# A named token resolves to either the mutable name or its ostree variant,
+# depending on whether the host is booted from a deployment.
+resolve_fedora() {
+  if [[ -n ${ostree_marker} && -e ${ostree_marker} ]]; then
+    echo fedora-ostree
+  else
+    echo fedora
+  fi
+}
+
 case "$id" in
   arch)   echo arch;   exit 0 ;;
-  fedora) echo fedora; exit 0 ;;
+  fedora) resolve_fedora; exit 0 ;;
 esac
 
 # Fall back to ID_LIKE — covers derivatives like AlmaLinux/Rocky (fedora-like)
@@ -57,8 +87,8 @@ esac
 # not here.
 for token in $id_like; do
   case "$token" in
-    fedora) echo fedora; exit 0 ;;
-    arch)   echo arch;   exit 0 ;;
+    fedora) resolve_fedora; exit 0 ;;
+    arch)   echo arch;     exit 0 ;;
   esac
 done
 

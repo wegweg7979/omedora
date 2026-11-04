@@ -7,7 +7,7 @@
 # dnf at repo-enable time and verified per transaction. Nothing to refresh.
 # See omedora/architecture.md §3. Arch path below is unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
-  fedora) exit 0 ;;
+  fedora|fedora-ostree) exit 0 ;;
 esac
 
 if omarchy-pkg-missing omarchy-keyring || ! sudo pacman-key --list-keys 40DFB630FF42BCFFB047046CF0134EE680CAC571 &>/dev/null; then

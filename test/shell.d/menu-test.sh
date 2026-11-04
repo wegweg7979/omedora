@@ -181,20 +181,6 @@ assert(
   defaultById['setup.input'].action.includes('input.lua'),
   'menu keeps Input as a direct config action'
 )
-assert(
-  defaultById['setup.direct-boot'].action.includes('omarchy-setup-direct-boot'),
-  'menu places Direct Boot directly under Setup'
-)
-assert(
-  defaultById['setup.reset'].action.includes('omarchy-system-factory-reset'),
-  'menu exposes Reset Computer under Setup'
-)
-const setupEntries = defaultItems.filter(item => item.parent === 'setup')
-assertEqual(
-  setupEntries[setupEntries.length - 1].id,
-  'setup.reset',
-  'menu lists Reset Computer last under Setup'
-)
 const expectedAgents = {
   pi: { icon: '\ue901', iconFont: 'omarchy', label: 'Pi' },
   omp: { icon: '\ue903', iconFont: 'omarchy', label: 'omp' },

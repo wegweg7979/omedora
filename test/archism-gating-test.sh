@@ -8,6 +8,10 @@
 # check the Fedora behavior: the no-op gates exit 0 and emit NO pacman/mkinitcpio
 # calls, and the install gates dispatch to dnf (not pacman). pacman, mkinitcpio,
 # dracut, sudo, gum are stubbed as tracers; OMARCHY_DISTRO selects the path.
+#
+# Pruned to the command set that still ships on this fork: the plymouth,
+# refresh-pacman/refresh-plymouth, and sunshine no-op-gate cases were removed
+# with those platforms on the immutable line.
 
 set -euo pipefail
 
@@ -25,7 +29,7 @@ for c in pacman mkinitcpio limine-mkinitcpio dracut plymouth-set-default-theme \
 done
 # sudo: log + run the rest (so a sudo'd pacman still hits the pacman tracer).
 printf '#!/bin/bash\nprintf "sudo %%s\\n" "$*" >>"%s"\n"$@"\n' "$MOCK_LOG" >"$BIN/sudo"
-# pkg helpers: tracer (so fingerprint/retroarch dnf installs are observable).
+# pkg helpers: tracer (so fingerprint dnf installs are observable).
 for c in omarchy-pkg-add omarchy-pkg-present omarchy-pkg-drop; do
   printf '#!/bin/bash\nprintf "%s %%s\\n" "$*" >>"%s"\nexit 1\n' "$c" "$MOCK_LOG" >"$BIN/$c"
 done
@@ -36,9 +40,8 @@ run() { : >"$MOCK_LOG"; ( export OMARCHY_DISTRO="$1"; shift; bash "$@" ) >"$TMP/
 log_has() { grep -qF "$1" "$MOCK_LOG"; }
 
 # --- no-op gates: Fedora exits 0, emits NO pacman/mkinitcpio -----------------
-for bin in omarchy-channel-set omarchy-refresh-pacman omarchy-refresh-plymouth \
-           omarchy-plymouth-reset; do
-  rc=$(run fedora "$ROOT/bin/$bin")
+for bin in omarchy-channel-set; do
+  rc=$(run fedora "$ROOT/bin/$bin" stable)
   assert_equals "$bin: Fedora exits 0" "0" "$rc"
   if log_has pacman || log_has mkinitcpio; then
     cat "$MOCK_LOG" >&2; fail "$bin: Fedora path makes no pacman/mkinitcpio call"
@@ -46,12 +49,6 @@ for bin in omarchy-channel-set omarchy-refresh-pacman omarchy-refresh-plymouth \
     pass "$bin: Fedora path makes no pacman/mkinitcpio call"
   fi
 done
-
-# omarchy-plymouth-set is the silent no-op (called during theme switch).
-rc=$(run fedora "$ROOT/bin/omarchy-plymouth-set" '#fff' '#000' /tmp/logo.png)
-assert_equals "omarchy-plymouth-set: Fedora exits 0" "0" "$rc"
-log_has mkinitcpio && fail "omarchy-plymouth-set: no mkinitcpio on Fedora" \
-  || pass "omarchy-plymouth-set: no mkinitcpio on Fedora"
 
 # --- install gates: Fedora dispatches to dnf names, not pacman --------------
 # A reader is present, so setup gets past its hardware check on any host.
@@ -76,25 +73,6 @@ assert_equals "fingerprint: Fedora setup completes" "0" "$rc"
 flow=$(grep -oE '^(omarchy-pkg-add|sudo fprintd-enroll|fprintd-verify|sudo authselect enable-feature|omarchy-apply-lock)' "$MOCK_LOG" | tr '\n' ',')
 assert_equals "fingerprint: install, enroll, verify, then authselect and the lock screen" \
   "omarchy-pkg-add,sudo fprintd-enroll,fprintd-verify,sudo authselect enable-feature,omarchy-apply-lock," "$flow"
-
-# Sunshine has no Fedora package source: the command stops before any step.
-rc=$(run fedora "$ROOT/bin/omarchy-install-service-sunshine")
-assert_equals "sunshine: Fedora exits 1" "1" "$rc"
-if [[ -s $MOCK_LOG ]] || ! grep -qF "not available through Omedora on Fedora" "$TMP/out"; then
-  cat "$TMP/out" "$MOCK_LOG" >&2; fail "sunshine: Fedora explains and changes nothing"
-else
-  pass "sunshine: Fedora explains and changes nothing"
-fi
-run arch "$ROOT/bin/omarchy-install-service-sunshine" >/dev/null || true
-log_has 'omarchy-pkg-add sunshine' \
-  && pass "sunshine: Arch path still installs the package" \
-  || { cat "$MOCK_LOG" >&2; fail "sunshine: Arch path still installs the package"; }
-
-# --- Arch path preserved: Fedora arm is additive, Arch still calls pacman ----
-# (byte-identity proves byte-equality; here just confirm the Arch path is live.)
-rc=$(run arch "$ROOT/bin/omarchy-refresh-pacman" || true)
-log_has pacman && pass "omarchy-refresh-pacman: Arch path still runs pacman" \
-  || { cat "$MOCK_LOG" >&2; fail "omarchy-refresh-pacman: Arch path still runs pacman"; }
 
 # --- debug: Fedora package list uses rpm/dnf, not the expac/pacman pipeline --
 grep -q 'rpm -q omedora omedora-settings' "$ROOT/bin/omarchy-debug" \

@@ -40,6 +40,15 @@
 #   OMEDORA_OS_RELEASE           override /etc/os-release for the distro guard
 #   OMEDORA_COPR_OWNER           COPR owner (default agaspar)
 
+# Immutable line: omedora-3 -> omedora-4 was a mutable-install migration.
+# On bootc the image is baked; moving to the 4.x line is a rebase, not a script.
+case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
+  fedora-ostree)
+    echo "Immutable host: rebase to an Omedora 4.x image rather than running the in-place upgrader." >&2
+    exit 1
+    ;;
+esac
+
 set -euo pipefail
 
 usage() {

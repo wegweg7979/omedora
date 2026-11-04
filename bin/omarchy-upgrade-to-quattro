@@ -5,6 +5,15 @@
 # omarchy:examples=omarchy upgrade to quattro | omarchy upgrade to quattro --dev
 # omarchy:requires-sudo=true
 
+# Immutable line: on a bootc/ostree host there is nothing to "upgrade to
+# quattro" into — the image is baked and updated by rebase. Arch path stays.
+case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
+  fedora-ostree)
+    echo "This is a mutable-install migration. On an immutable image, rebase to a newer Omedora image instead." >&2
+    exit 1
+    ;;
+esac
+
 set -euo pipefail
 
 usage() {

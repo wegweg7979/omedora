@@ -31,14 +31,17 @@ PRETTY_NAME="Arch Linux"')
 actual=$(OMARCHY_OS_RELEASE_PATH="$arch_release" "$DISTRO")
 assert_equals "ID=arch is detected as arch" "$actual" "arch"
 
-# --- Fixture: vanilla Fedora 44 ---
+# --- Fixture: vanilla Fedora 44. This dev host is itself booted from an
+# ostree deployment, so force the mutable path explicitly with an empty marker
+# (otherwise the marker fixture under the default path turns it into
+# fedora-ostree). The ostree-branch assertions below prove that path.
 fedora_release=$(write_fixture fedora-release 'NAME="Fedora Linux"
 VERSION="44 (Workstation Edition)"
 ID=fedora
 VERSION_ID="44"
 PRETTY_NAME="Fedora Linux 44 (Workstation Edition)"')
 
-actual=$(OMARCHY_OS_RELEASE_PATH="$fedora_release" "$DISTRO")
+actual=$(OMARCHY_OSTREE_MARKER="" OMARCHY_OS_RELEASE_PATH="$fedora_release" "$DISTRO")
 assert_equals "ID=fedora is detected as fedora" "$actual" "fedora"
 
 # --- ID_LIKE fallback: AlmaLinux ish (ID_LIKE=fedora) ---
@@ -47,7 +50,7 @@ ID=almalinux
 ID_LIKE="rhel centos fedora"
 PRETTY_NAME="AlmaLinux 9"')
 
-actual=$(OMARCHY_OS_RELEASE_PATH="$almalinux_release" "$DISTRO")
+actual=$(OMARCHY_OSTREE_MARKER="" OMARCHY_OS_RELEASE_PATH="$almalinux_release" "$DISTRO")
 assert_equals "ID_LIKE=...fedora... falls back to fedora" "$actual" "fedora"
 
 # --- ID_LIKE fallback: Manjaro (ID_LIKE=arch) ---
@@ -66,6 +69,40 @@ assert_equals "OMARCHY_DISTRO=fedora overrides arch fixture" "$actual" "fedora"
 actual=$(OMARCHY_DISTRO=arch OMARCHY_OS_RELEASE_PATH="$fedora_release" "$DISTRO")
 assert_equals "OMARCHY_DISTRO=arch overrides fedora fixture" "$actual" "arch"
 
+# --- fedora-ostree: Fedora host booted from an ostree/bootc deployment. ---
+# The marker file is honored via OMARCHY_OSTREE_MARKER (test seam). With the
+# marker present, a Fedora/dataos release resolves to fedora-ostree; without
+# it, the same release resolves to plain fedora.
+ostree_marker_fixture=$(write_fixture ostree-booted '')
+
+actual=$(OMARCHY_OSTREE_MARKER="$ostree_marker_fixture" \
+  OMARCHY_OS_RELEASE_PATH="$fedora_release" "$DISTRO")
+assert_equals "ID=fedora + ostree marker detected as fedora-ostree" "$actual" "fedora-ostree"
+
+# Quoted ID=fedora also resolves through the ostree check (self-contained
+# fixture so this block does not depend on a later declaration).
+ostree_quoted_release=$(write_fixture ostree-quoted-release 'ID="fedora"
+PRETTY_NAME="Fedora Linux 44"')
+actual=$(OMARCHY_OSTREE_MARKER="$ostree_marker_fixture" \
+  OMARCHY_OS_RELEASE_PATH="$ostree_quoted_release" "$DISTRO")
+assert_equals "quoted ID=fedora + ostree marker detected as fedora-ostree" "$actual" "fedora-ostree"
+
+# ID_LIKE=fedora fallback also resolves through the ostree check (reuses the
+# almalinux_release fixture declared above, which is already correctly quoted).
+actual=$(OMARCHY_OSTREE_MARKER="$ostree_marker_fixture" \
+  OMARCHY_OS_RELEASE_PATH="$almalinux_release" "$DISTRO")
+assert_equals "ID_LIKE=fedora + ostree marker detected as fedora-ostree" "$actual" "fedora-ostree"
+
+# Explicitly empty marker forces the mutable path even when /run/ostree-booted
+# would exist on a real bootc host.
+actual=$(OMARCHY_OSTREE_MARKER="" OMARCHY_OS_RELEASE_PATH="$fedora_release" "$DISTRO")
+assert_equals "empty marker on fedora release detected as fedora (mutable)" "$actual" "fedora"
+
+# OMARCHY_DISTRO=arch still beats the ostree marker.
+actual=$(OMARCHY_DISTRO=arch OMARCHY_OSTREE_MARKER="$ostree_marker_fixture" \
+  OMARCHY_OS_RELEASE_PATH="$fedora_release" "$DISTRO")
+assert_equals "OMARCHY_DISTRO=arch overrides ostree marker" "$actual" "arch"
+
 # --- Unsupported distro exits non-zero ---
 unsupported_release=$(write_fixture unsupported-release 'NAME="Some Other Distro"
 ID=other
@@ -82,5 +119,5 @@ assert_exit_code "missing os-release exits 1" 1 \
 quoted_release=$(write_fixture quoted-release 'ID="fedora"
 PRETTY_NAME="Fedora Linux 44"')
 
-actual=$(OMARCHY_OS_RELEASE_PATH="$quoted_release" "$DISTRO")
+actual=$(OMARCHY_OSTREE_MARKER="" OMARCHY_OS_RELEASE_PATH="$quoted_release" "$DISTRO")
 assert_equals "quoted ID values are unquoted" "$actual" "fedora"

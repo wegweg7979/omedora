@@ -6,6 +6,11 @@
 # Fedora dispatch — dnf-backed picker sibling. Arch path below is unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/pkg-install" "$@" ;;
+  fedora-ostree)
+    echo "Interactive package install isn't available on an immutable image." >&2
+    echo "Bake RPMs into the image build (fedora.toml / Containerfile) and rebase." >&2
+    exit 1
+    ;;
 esac
 
 fzf_args=(

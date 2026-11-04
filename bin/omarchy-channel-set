@@ -9,7 +9,7 @@
 # note and exit 0 (instead of running git branch + pacman ops that don't apply).
 # Arch path below is unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
-  fedora)
+  fedora|fedora-ostree)
     echo "Channel switching isn't available on Omedora — packages come from the omedora COPR."
     echo "Run 'omedora update' to get the latest packages."
     exit 0

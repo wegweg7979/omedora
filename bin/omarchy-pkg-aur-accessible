@@ -5,7 +5,7 @@
 # Fedora dispatch — there is no AUR on Fedora; report it unreachable so every
 # AUR-conditional flow (update, install TUI) no-ops. See omedora/architecture.md §3.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
-  fedora) exit 1 ;;
+  fedora|fedora-ostree) exit 1 ;;
 esac
 
 curl -sf --connect-timeout 30 --retry 3 --retry-delay 3 -A "omarchy-update" \

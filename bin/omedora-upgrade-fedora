@@ -47,6 +47,15 @@
 #   OMEDORA_SNAPSHOT_CMD      snapshot tool (default omedora-snapshot)
 #   OMEDORA_UPGRADE_PROMPT_STDIN=1  read prompts from stdin, never /dev/tty
 
+# Immutable line: this is a mutable dnf release-upgrade. On bootc, move to a
+# newer Fedora-rebased image (bump base-image in the Containerfile + rebase).
+case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
+  fedora-ostree)
+    echo "Immutable host: rebase to a newer Fedora-rebased Omedora image instead of an in-place dnf upgrade." >&2
+    exit 1
+    ;;
+esac
+
 set -euo pipefail
 
 usage() {

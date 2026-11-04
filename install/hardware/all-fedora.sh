@@ -29,4 +29,3 @@
 # input escalation path; existing installs are trimmed by migration
 # 1787865477). Nothing to grant on fresh installs.
 run_logged "$OMARCHY_INSTALL/hardware/fix-synaptic-touchpad.sh"
-run_logged "$OMARCHY_INSTALL/hardware/framework/qmk-hid.sh"

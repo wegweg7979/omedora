@@ -575,10 +575,9 @@ grep -q "timesyncd" "$MOCK_LOG" \
   && fail "update-time on Fedora never touches systemd-timesyncd" \
   || pass "update-time on Fedora never touches systemd-timesyncd"
 
-run_fedora bash "$ROOT/bin/omarchy-snapshot" create >/dev/null
-grep -q "omedora-snapshot create pre-update" "$MOCK_LOG" \
-  && pass "snapshot create on Fedora routes to omedora-snapshot" \
-  || { cat "$MOCK_LOG" >&2; fail "snapshot create on Fedora routes to omedora-snapshot"; }
+# . Snapshot routing was removed with the boot-stack (snapper-limmine/factory-reset)
+# . The immutable line has no snapper: update applies an image, and a missing
+# . snapshot tool is tolerated by omarchy-update's exit-127 guard.
 
 # ===========================================================================
 echo "# --- PART 2: bin/fedora/update-available state contract ---"

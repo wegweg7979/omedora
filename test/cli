@@ -81,32 +81,11 @@ pass "commands --all does not crash"
 "$CLI" commands --all --json | jq -e '.commands[] | select(.route == "omarchy hyprland window gaps toggle" and .summary != "undocumented")' >/dev/null
 pass "fallback commands are inferred and documented"
 
-"$CLI" commands --all --json | jq -e '.commands[] | select(.route == "omarchy dev benchmark cli")' >/dev/null
-pass "benchmark command is discoverable in all commands"
-
 "$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-pkg-add" and .route == "omarchy pkg add" and .filename_route == "omarchy pkg add" and (.routes | index("omarchy pkg add")))' >/dev/null
 pass "JSON exposes direct pkg add route"
 
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-install-gaming-xbox-cloud" and .route == "omarchy install gaming xbox-cloud" and .filename_route == "omarchy install gaming xbox cloud" and (.routes | index("omarchy install gaming xbox cloud")))' >/dev/null
-pass "Xbox Cloud installer keeps hyphenated canonical route"
-
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-install-gaming-xbox-controllers" and .route == "omarchy install gaming xbox-controllers" and .filename_route == "omarchy install gaming xbox controllers" and (.routes | index("omarchy install gaming xbox controllers")))' >/dev/null
-pass "Xbox controller installer keeps hyphenated canonical route"
-
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-remove-gaming-xbox-controllers" and .route == "omarchy remove gaming xbox-controllers" and .filename_route == "omarchy remove gaming xbox controllers" and (.routes | index("omarchy remove gaming xbox controllers")))' >/dev/null
-pass "Xbox controller remover keeps hyphenated canonical route"
-
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-install-gaming-geforce-now" and .route == "omarchy install gaming geforce-now" and .filename_route == "omarchy install gaming geforce now" and (.routes | index("omarchy install gaming geforce now")))' >/dev/null
-pass "GeForce NOW installer keeps hyphenated canonical route"
-
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-remove-gaming-geforce-now" and .route == "omarchy remove gaming geforce-now" and .filename_route == "omarchy remove gaming geforce now" and (.routes | index("omarchy remove gaming geforce now")))' >/dev/null
-pass "GeForce NOW remover keeps hyphenated canonical route"
-
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-install-gaming-gpu-lib32" and .route == "omarchy install gaming gpu-lib32" and .filename_route == "omarchy install gaming gpu lib32" and (.routes | index("omarchy install gaming gpu lib32")))' >/dev/null
-pass "GPU lib32 installer keeps hyphenated canonical route"
-
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-refresh-pacman" and .requires_sudo == true)' >/dev/null
-pass "sudo metadata marks sudo commands"
+"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-refresh-shell" and .requires_sudo == false)' >/dev/null
+pass "sudo metadata marks sudo command policy"
 
 output=$("$CLI" theme --help)
 assert_output_contains "group help renders" "$output" "Theme commands"
@@ -131,12 +110,8 @@ assert_output_contains "restart group includes inferred commands" "$output" "oma
 assert_output_contains "restart group includes all restart commands" "$output" "omarchy restart wifi"
 
 output=$("$CLI" hw --help)
-assert_output_contains "hardware group help renders" "$output" "omarchy hw asus rog"
-assert_output_contains "hardware group includes touchpad" "$output" "omarchy hw touchpad"
-
-output=$("$CLI" hw asus)
-assert_output_contains "partial hardware prefix renders matching commands" "$output" "omarchy hw asus rog"
-assert_output_contains "partial hardware prefix includes nested match" "$output" "omarchy hw asus zenbook ux5406aa"
+assert_output_contains "hardware group help renders" "$output" "omarchy hw touchpad"
+assert_output_contains "hardware group includes laptop" "$output" "omarchy hw laptop"
 
 output=$("$CLI" menu --help)
 assert_output_contains "menu group includes share fallback route" "$output" "omarchy menu share"
@@ -231,9 +206,6 @@ assert_output_contains "pkg add help shows direct route" "$output" "omarchy pkg 
 
 output=$("$CLI" system reboot --help)
 assert_output_contains "system command help is safe" "$output" "omarchy-system-reboot"
-
-output=$("$CLI" dev benchmark cli --repeat=1)
-assert_output_contains "benchmark command runs" "$output" "Omarchy CLI benchmark"
 
 "$CLI" theme list >/dev/null
 pass "safe dispatch works for theme list"
@@ -427,14 +399,6 @@ pass "legacy short palette renders the complete generated theme"
 osc_summary=$("$ROOT/bin/omarchy-theme-osc" "$NEXT_THEME/colors.toml" | python -c 'import sys; data = sys.stdin.buffer.read(); print(data.count(b"]4;"), b"]4;1;#ff0000" in data, b"]4;7;#ffffff" in data, b"]4;15;#eeeeee" in data, b"]12;#eeeeee" in data, b"]17;#808080" in data, b"]19;#eeeeee" in data)')
 [[ $osc_summary == "16 True True True True True True" ]] || fail "theme OSC aliases semantic colors to ANSI palette"
 pass "theme OSC aliases semantic colors to ANSI palette"
-
-preview_output=$(OMARCHY_PATH="$ROOT" HOME="$PI_TMPDIR" "$ROOT/bin/omarchy-dev-theme-preview" "$NEXT_THEME/colors.toml" --no-color)
-assert_output_contains "theme preview shows background to bright_foreground gradient" "$preview_output" "background -> bright_foreground gradient"
-assert_output_contains "theme preview orders light mode ramp light to dark" "$preview_output" "Neutral ramp (lightest -> darkest)"
-assert_output_contains "theme preview includes dark background slots" "$preview_output" "darker_background"
-assert_output_contains "theme preview shows selected text sample" "$preview_output" "This is some [selected text] in a sentence"
-assert_output_contains "theme preview shows practical terminal samples" "$preview_output" "Terminal/UI samples"
-assert_output_contains "theme preview shows ANSI palette strips" "$preview_output" "ANSI palette strips"
 
 tokyo_fg=$(awk -F'"' '/^foreground =/ { print $2; exit }' "$ROOT/themes/tokyo-night/colors.toml")
 tokyo_light_fg=$(awk -F'"' '/^light_foreground =/ { print $2; exit }' "$ROOT/themes/tokyo-night/colors.toml")

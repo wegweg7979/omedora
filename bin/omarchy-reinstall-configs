@@ -13,7 +13,7 @@ fi
 # (coexistence contract; see omedora/architecture.md). Limine/plymouth refresh
 # don't apply on Fedora; the nvim refresh mirrors the upstream tail.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
-  fedora)
+  fedora|fedora-ostree)
     echo "Resetting Omedora user configs to shipped defaults (existing files are backed up)..."
     omedora-adopt-user --reset
     if omarchy-cmd-present omarchy-nvim-refresh; then

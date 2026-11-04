@@ -6,6 +6,11 @@
 # Fedora dispatch — dnf-backed picker sibling. Arch path below is unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/pkg-remove" "$@" ;;
+  fedora-ostree)
+    echo "Interactive package removal isn't available on an immutable image." >&2
+    echo "Remove entries from the image build (fedora.toml / Containerfile) and rebase." >&2
+    exit 1
+    ;;
 esac
 
 fzf_args=(

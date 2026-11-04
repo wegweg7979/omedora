@@ -99,7 +99,7 @@ cat >"$SHIM/curl" <<'EOF'
 printf 'curl %s\n' "$*" >>"$CURL_LOG"
 case ${CURL_MODE:-ok} in
   ok)   cat "$CURL_FIXTURE"; printf '\n200' ;;
-  404)  printf '{"error": "Project agaspar/omedora-4 does not exist."}\n404' ;;
+  404)  printf '{"error": "Project wegweg7979/omedora-4 does not exist."}\n404' ;;
   500)  printf 'Internal Server Error\n500' ;;
   down) echo "curl: (6) Could not resolve host: copr.fedorainfracloud.org" >&2; exit 6 ;;
 esac
@@ -108,7 +108,7 @@ chmod +x "$SHIM/curl"
 
 probe 0 "HTTP 200 with the chroot exits 0" PATH="$SHIM:$PATH" CURL_FIXTURE="$FIXTURE" -- 45
 assert_output_contains "the probe queries the project endpoint for the derived COPR" \
-  "$(cat "$CURL_LOG")" "/api_3/project?ownername=agaspar&projectname=omedora-"
+  "$(cat "$CURL_LOG")" "/api_3/project?ownername=wegweg7979&projectname=omedora-"
 probe 1 "HTTP 200 without the chroot exits 1" PATH="$SHIM:$PATH" CURL_FIXTURE="$FIXTURE" -- 46
 probe 1 "HTTP 404 (project missing) exits 1" PATH="$SHIM:$PATH" CURL_MODE=404 -- 45
 assert_output_contains "a missing project is named" "$probe_err" "does not exist"
@@ -122,7 +122,7 @@ probe 0 "OMEDORA_COPR_OWNER flows into the API query" \
 assert_output_contains "the owner override reaches the query" "$(cat "$CURL_LOG")" "ownername=someone&"
 
 echo "# --- existing modes are unchanged ---"
-assert_output_contains "default mode still prints owner/project" "$("$PROBE")" "agaspar/omedora-"
+assert_output_contains "default mode still prints owner/project" "$("$PROBE")" "wegweg7979/omedora-"
 assert_output_contains "--repo-id still prints the dnf repo id" \
-  "$("$PROBE" --repo-id)" "copr:copr.fedorainfracloud.org:agaspar:omedora-"
+  "$("$PROBE" --repo-id)" "copr:copr.fedorainfracloud.org:wegweg7979:omedora-"
 assert_exit_code "an unknown argument still exits 2" 2 "$PROBE" --bogus

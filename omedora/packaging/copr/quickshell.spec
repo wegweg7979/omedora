@@ -112,7 +112,7 @@ environment.
 %cmake  -GNinja \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
         -DCMAKE_SKIP_INSTALL_RPATH=ON \
-        -DDISTRIBUTOR="omedora COPR (agaspar/omedora-4)" \
+        -DDISTRIBUTOR="omedora COPR (wegweg7979/omedora-4)" \
         -DDISTRIBUTOR_DEBUGINFO_AVAILABLE=YES \
         -DINSTALL_QML_PREFIX=%{_lib}/qt6/qml \
         -DGIT_REVISION=%{tag_commit} \

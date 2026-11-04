@@ -80,26 +80,16 @@ SPECS=(
   # On-demand (not in any base package set); the Fedora installer installs the
   # base only. No intra-stack BuildRequires.
   voxtype.spec
-  # openclaw: the seed Install > AI > OpenClaw and `omarchy-default-agent
-  # openclaw` set the self-updating ~/.openclaw copy up from (the npm release
-  # tarball + upstream's install-cli.sh, as Omarchy's Arch package ships). A
-  # noarch copy of files, so nothing is vendored. On-demand (not in any base
-  # package set). No intra-stack BuildRequires.
-  openclaw.spec
-  # hyprpad: drive Hyprland from a Steam Controller or gamepad. From-source
-  # cargo build, vendored like voxtype, with TWO vendor tarballs because the
-  # on-screen keyboard is a second standalone crate (osk/, own Cargo.lock).
-  # Ships the daemon + hyprpad-osk, the broker socket/service, user unit, udev
-  # rule, sysusers group, and the Omarchy shell plugins its helpers install.
-  # Hardware-specific and opt-in; enables nothing and is in no base package
-  # set. No intra-stack BuildRequires.
-  hyprpad.spec
-  # omarchy-nvim.spec is intentionally NOT built: its %build bakes the plugin
-  # cache via a headless `:Lazy! sync` that fetches ~50 plugins from GitHub,
-  # which fails in COPR's offline mock build. Nothing Requires it, so instead
-  # the omedora installer (install/packaging/nvim.sh) bootstraps the same
-  # commit-pinned config + Lazy sync directly on the user's networked machine.
-  # The spec + .sources are retired in place (see their header) for reference.
+  # openclaw.spec: PRUNED from the build list — the immutable line removed the
+  # OpenClaw installers/seed (omarchy-install-ai-openclaw, launch-openclaw,
+  # openclaw-onboard), so nothing publishes the ~/.openclaw seed. Remove the
+  # spec file itself too when the COPR is next swept.
+  # hyprpad.spec: PRUNED — drive Hyprland from a Steam Controller/gamepad.
+  # Gaming/gamepad workflow was removed on the immutable line.
+  # omarchy-nvim.spec remains intentionally NOT built: its %build bakes the
+  # plugin cache via a headless `:Lazy! sync` that fetches ~50 plugins from
+  # GitHub, which fails in COPR's offline mock build. The omedora installer
+  # bootstraps the same commit-pinned config on the user's machine instead.
   # task #66: the vendored Hyprland stack, IN BUILD ORDER (deep intra-stack
   # BuildRequires — each -devel must be in the local repo before the next
   # builds). The whole stack is built from omedora's own COPR.
@@ -111,19 +101,10 @@ SPECS=(
   # uwsm (the session manager omedora launches through) is not in Fedora — so
   # it's vendored and built from omedora's own COPR too.
   uwsm.spec
-  # HypXRland's complete rolling stack. The compositor is private under
-  # /usr/libexec and shares the 0.56.x libraries with the stable Hyprland built
-  # above. Leaf runtimes precede the dependency-only stack/session packages;
-  # the stack leaves monado-xreal out, and hypxrland-omedora requires it.
-  # basalt-xreal, the Basalt VIT tracker for monado-xreal's opt-in 6DoF,
-  # builds before it: monado-xreal requires it and BuildRequires it for %check.
-  # xreal-ctl (the XREAL 2D/3D HID helper, built from hypxrland's archive)
-  # precedes hypxrland-omedora, which requires it.
-  hypxrpaper.spec hypxrva.spec hypxrhud.spec hypxrcompose.spec
-  hypxrvoice-model-base-en.spec hypxrvoice.spec
-  wivrn-hypxr.spec basalt-xreal.spec monado-xreal.spec xreal-ctl.spec
-  hypxrland-legacy-config.spec
-  hypxrland.spec hypxrland-stack.spec hypxrland-omedora.spec
+  # HypXR/vision stack (hypxr*, basalt-xreal, monado-xreal, wivrn-hypxr,
+  # xreal-ctl): REMOVED from the build list — the XR/vision packages were
+  # dropped from the immutable line (see PLAN-immutable-adaptation.md). The
+  # specs were deleted with the removal.
   # hyprland-omedora (the 3.8.2-era session-entry shim) is RETIRED on the 4.x
   # line: omedora-settings ships the omedora.desktop session entry and
   # Obsoletes it. The published 1.0.0 stays on the COPR for upgrade paths.

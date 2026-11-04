@@ -278,7 +278,7 @@ assert_output_contains "P3: docker's Fedora names are in the transaction on a cl
 assert_output_lacks "P3: a clean machine has nothing to keep" \
   "$PLAN_OUT" "kept (never replaced or removed)"
 assert_output_contains "P3: skip-mapped packages disclosed" "$PLAN_OUT" "ufw"
-assert_output_contains "P3: omedora COPR disclosed" "$PLAN_OUT" "enable the omedora COPR: agaspar/omedora-4"
+assert_output_contains "P3: omedora COPR disclosed" "$PLAN_OUT" "enable the omedora COPR: wegweg7979/omedora-4"
 assert_output_lacks "P3: no local test repo claimed without one" "$PLAN_OUT" "local test repo"
 assert_output_contains "P3: RPM Fusion disclosed" "$PLAN_OUT" "RPM Fusion"
 assert_output_contains "P3: /etc drop-ins disclosed" "$PLAN_OUT" "ignore power button"

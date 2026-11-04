@@ -32,20 +32,20 @@ Extend the existing dispatch from two tokens to three:
 - Every surviving mutable-state command's Fedora `case` becomes:
   ```bash
   case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
-    fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/ostree/<sibling>" "$@";;
+    fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/omarchy-ostree/<sibling>" "$@";;
     fedora) ...existing dnf sibling...;;
   esac
   ```
   Arch bodies stay untouched → upstream `git rebase` stays clean; only the dispatch
-  prepend and new additive `bin/ostree/` siblings change.
+  prepend and new additive `bin/omarchy-ostree/` siblings change.
 
 ---
 
 ## Phase 1 — infra (new additive files, no upstream body edits)
 
 - `bin/omarchy-distro`: emit `fedora-ostree` when `/run/ostree-booted` exists.
-- `bin/ostree/` directory: shared immutable siblings.
-- `bin/ostree/pkg.py` or `bin/ostree/pkg-*` siblings — bake-check + flatpak fallback.
+- `bin/omarchy-ostree/` directory: shared immutable siblings (named omarchy-ostree, not ostree, since /usr/bin/ostree is the real ostree CLI — a dir there conflicts).
+- `bin/omarchy-ostree/pkg.py` or siblings — bake-check + flatpak fallback.
 
 ## Phase 2 — package helpers (`pkg-*`, mutable)
 

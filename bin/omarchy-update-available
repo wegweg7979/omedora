@@ -8,7 +8,7 @@
 # omedora/architecture.md §3. Arch path unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/update-available" "$@" ;;
-  fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/ostree/update-available" "$@" ;;
+  fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/omarchy-ostree/update-available" "$@" ;;
 esac
 
 set -euo pipefail

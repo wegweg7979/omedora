@@ -7,7 +7,7 @@
 # what AUR would have provided on Arch. See omedora/architecture.md §3.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/pkg.py" aur-add "$@" ;;
-  fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/ostree/pkg.py" add "$@" ;;
+  fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/omarchy-ostree/pkg.py" add "$@" ;;
 esac
 
 if omarchy-pkg-missing "$@"; then

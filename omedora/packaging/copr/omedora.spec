@@ -184,11 +184,12 @@ fi
 %{_bindir}/omedora
 %{_bindir}/omedora-*
 %{_bindir}/fedora/
-# bin/ostree/ — the immutable (bootc) update + package helpers (pkg.py,
+# bin/omarchy-ostree/ — the immutable (bootc) update + package helpers (pkg.py,
 # update, update-available), dispatched from the omarchy-* commands when
-# they detect fedora-ostree. Kept out of the omarchy-* globs (they're not
-# omarchy-* names), so they're listed explicitly.
-%{_bindir}/ostree/
+# they detect fedora-ostree. Named omarchy-ostree (NOT ostree) because the
+# system ostree RPM owns /usr/bin/ostree as a FILE, so a dir called ostree/
+# there would conflict; the omarchy-ostree name avoids that. Listed explicitly.
+%{_bindir}/omarchy-ostree/
 # /usr/share/omarchy (dir + bin farm co-owned with omedora-settings).
 %dir %{_datadir}/omarchy
 %dir %{_datadir}/omarchy/bin
@@ -197,7 +198,7 @@ fi
 %{_datadir}/omarchy/bin/omedora
 %{_datadir}/omarchy/bin/omedora-*
 %{_datadir}/omarchy/bin/fedora
-%{_datadir}/omarchy/bin/ostree
+%{_datadir}/omarchy/bin/omarchy-ostree
 %{_datadir}/omarchy/install/
 %{_datadir}/omarchy/migrations/
 %{_datadir}/omarchy/themes/

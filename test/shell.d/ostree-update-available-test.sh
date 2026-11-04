@@ -7,7 +7,7 @@ source "$(dirname "$0")/base-test.sh"
 test_tmp=$(mktemp -d)
 trap 'rm -rf "$test_tmp"' EXIT
 
-CHECKER="$ROOT/bin/ostree/update-available"
+CHECKER="$ROOT/bin/omarchy-ostree/update-available"
 
 # Home that will receive the state files.
 export HOME="$test_tmp/home"

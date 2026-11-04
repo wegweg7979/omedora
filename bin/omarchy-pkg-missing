@@ -6,7 +6,7 @@
 # Fedora dispatch — see omedora/architecture.md §3. Arch path below is unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/pkg.py" missing "$@" ;;
-  fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/ostree/pkg.py" missing "$@" ;;
+  fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/omarchy-ostree/pkg.py" missing "$@" ;;
 esac
 
 for pkg in "$@"; do

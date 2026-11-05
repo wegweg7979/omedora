@@ -1,3 +1,7 @@
+# Runs only on mutable Arch/pacman: on bootc/Fedora the equivalent is baked (dnf/image),
+# so this Arch-only mutation must not run on the immutable host.
+[[ "$(omarchy-distro)" == "fedora" || "$(omarchy-distro)" == "fedora-ostree" ]] && exit 0
+
 echo "Retire systemd-networkd in favor of NetworkManager"
 
 as_root() {

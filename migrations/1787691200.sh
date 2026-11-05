@@ -1,3 +1,7 @@
+# Runs only on mutable Arch/pacman: on bootc/Fedora the equivalent is baked (dnf/image),
+# so this Arch-only mutation must not run on the immutable host.
+[[ "$(omarchy-distro)" == "fedora" || "$(omarchy-distro)" == "fedora-ostree" ]] && exit 0
+
 echo "Skip Chromium's new first-run EULA on machines already on Quattro"
 
 # Chromium 151 flipped MasterPrefs::eula_required from false to true, so an

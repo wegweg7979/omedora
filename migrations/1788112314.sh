@@ -1,3 +1,7 @@
+# Runs only on mutable Arch/pacman: on bootc/Fedora the equivalent is baked (dnf/image),
+# so this Arch-only mutation must not run on the immutable host.
+[[ "$(omarchy-distro)" == "fedora" || "$(omarchy-distro)" == "fedora-ostree" ]] && exit 0
+
 echo "Point rc-channel installs at the rc package repository"
 
 # pacman-rc.conf shipped with [omarchy] pointing at the edge repository, a

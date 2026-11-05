@@ -88,20 +88,18 @@ if [[ -n $json ]]; then
   fi
 fi
 
-# --- 2. remote digest detect (network poll fallback) -----------------------------
-remote_available=0
-if [[ $staged_available == 0 && -n $image_ref ]]; then
-  skopeo_cmd="${OMEDORA_SKOPEO_CMD:-skopeo inspect --format '{{.Digest}}'}"
-  read -r -a skopeo <<<"$skopeo_cmd"
-  remote=$(timeout "$CHECK_TIMEOUT" "${skopeo[@]}" "$image_ref" 2>/dev/null || true)
-  echo "ostree-update-available: remote=${remote:-?}" >&2
-  if [[ -n $remote && -n $booted_digest && $remote != "$booted_digest" ]]; then
-    remote_available=1
-  fi
-fi
+# --- 2. authoritative OS check (no hand-rolled digest poll) ----------------------
+# An "update" on immutable == "is there a deployment staged to reboot into".
+# That state is OWNED by rpm-ostree/bootc and read above via .staged. We do NOT
+# re-derive it from a skopeo digest poll: the registry `latest` tag moves when
+# the same git commit is rebuilt (the COPR can change between builds), so a
+# digest comparison against a moving tag reports a spurious "update" that
+# bootc/rpm-ostree correctly see as nothing-to-apply. Deferring to the OS means
+# this checker can never disagree with bootc/rpm-ostree, because it reads the
+# exact same deployment set they reconcile.
 
 # --- write state + exit per the widget contract -----------------------------------
-if (( staged_available || remote_available )); then
+if (( staged_available )); then
   # A placeholder package line so the bar badge has a list to show.
   echo "omarchy-ostree-image" >"$packages_tmp"
   cp "$packages_tmp" "$STATE_DIR/packages"

@@ -1,7 +1,7 @@
 # Fedora: Limine boot-image rebuilds are Arch-only; Fedora keeps its
 # distribution bootloader and kernel command line. Skip on Omedora (the
 # limine-mkinitcpio presence check below would also no-op).
-[[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" ]] && exit 0
+[[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" || "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora-ostree" ]] && exit 0
 
 echo "Stop the boot from waiting on a black screen for the console to answer"
 

@@ -1,5 +1,6 @@
 echo "Detect dropped SSH connections quickly instead of leaving terminals hung"
 
+# Runs on immutable too (fedora-ostree): writes only /etc or idempotent systemctl, both bootc-safe.
 [[ "$(omarchy-distro)" == "fedora" ]] && exit 0
 
 conf="/etc/ssh/ssh_config.d/20-omarchy-keepalive.conf"

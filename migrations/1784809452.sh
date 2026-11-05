@@ -2,7 +2,7 @@ echo "Remove Snapper timeline snapshots leaked by earlier defaults"
 
 # Omedora does not configure or own Snapper on Fedora. Leave any independently
 # managed Fedora snapshots untouched; the Arch cleanup below is not our policy.
-[[ "$(omarchy-distro)" == "fedora" ]] && exit 0
+[[ "$(omarchy-distro)" == "fedora" || "$(omarchy-distro)" == "fedora-ostree" ]] && exit 0
 
 SNAPPER_CONFIG_PATH="${OMARCHY_SNAPPER_CONFIG_PATH:-/etc/snapper/configs/root}"
 

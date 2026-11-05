@@ -1,6 +1,6 @@
 echo "Rebuild the boot image when it predates the Limine kernel command line"
 
-[[ "$(omarchy-distro)" == "fedora" ]] && exit 0
+[[ "$(omarchy-distro)" == "fedora" || "$(omarchy-distro)" == "fedora-ostree" ]] && exit 0
 
 # 1784917531 gated its rebuild on initramfs_async=0 being present in the Limine
 # config, but omarchy-settings ships omarchy-defaults.conf with that parameter

@@ -1,5 +1,6 @@
 echo "Let systemd-oomd kill a runaway app instead of the whole session"
 
+# Runs on immutable too (fedora-ostree): writes only /etc or idempotent systemctl, both bootc-safe.
 [[ "$(omarchy-distro)" == "fedora" ]] && exit 0
 
 # New installs get this from install/config/enable-services.sh. Existing ones

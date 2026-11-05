@@ -1,5 +1,6 @@
 echo "Give SSH commands the user-level tool paths via the PAM environment"
 
+# Runs on immutable too (fedora-ostree): writes only /etc or idempotent systemctl, both bootc-safe.
 [[ "$(omarchy-distro)" == "fedora" ]] && exit 0
 
 # SSH commands (ssh host cmd) run without a login or interactive shell, so the

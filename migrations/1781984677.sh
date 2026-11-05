@@ -1,7 +1,7 @@
 # Fedora: Snapper + limine-snapper-sync are Arch/Limine-only and skip-mapped on
 # Omedora (snapshots go through omedora-snapshot). This repair migration would
 # always see needs_repair=1 and exec the Arch snapper.sh — skip it (mark done).
-[[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" ]] && exit 0
+[[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" || "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora-ostree" ]] && exit 0
 
 echo "Normalize Snapper snapshot services"
 

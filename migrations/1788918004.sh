@@ -1,6 +1,8 @@
 echo "Restore the lock screen PAM service when a Fedora install has lost it"
 
-[[ "$(omarchy-distro)" == "fedora" ]] || exit 0
+# Runs on BOTH mutable Fedora and immutable (fedora-ostree): the Quickshell
+# lock needs this PAM service on any Fedora-family host. Skip only on Arch.
+[[ "$(omarchy-distro)" == "fedora" || "$(omarchy-distro)" == "fedora-ostree" ]] || exit 0
 
 # The Quickshell lock screen authenticates against this PAM service and refuses
 # to lock while it is missing (shell/plugins/lock answers missing-pam), so

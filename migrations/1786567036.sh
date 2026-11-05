@@ -1,5 +1,6 @@
 echo "Unmask wpa_supplicant so NetworkManager can bring wifi back"
 
+# Runs on immutable too (fedora-ostree): writes only /etc or idempotent systemctl, both bootc-safe.
 [[ ${OMARCHY_DISTRO:-$(omarchy-distro)} == "fedora" ]] && { return 0 2>/dev/null || exit 0; }
 
 # iwd-era installs may carry a wpa_supplicant.service mask, which breaks

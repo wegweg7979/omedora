@@ -1,5 +1,6 @@
 echo "Gate sudo and polkit fingerprint auth behind the lid state (password when the lid is shut)"
 
+# Runs on immutable too (fedora-ostree): writes only /etc or idempotent systemctl, both bootc-safe.
 [[ "$(omarchy-distro)" == "fedora" ]] && exit 0
 
 # Existing fingerprint setups have pam_fprintd first in /etc/pam.d/sudo and

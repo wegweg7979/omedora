@@ -1,5 +1,6 @@
 echo "Keep Wi-Fi power save off for lower latency"
 
+# Runs on immutable too (fedora-ostree): writes only /etc or idempotent systemctl, both bootc-safe.
 [[ "$(omarchy-distro)" == "fedora" ]] && exit 0
 
 as_root() {

@@ -2,7 +2,7 @@ echo "Unpack the initramfs synchronously so Plymouth survives early boot"
 
 # Fedora uses dracut and Omedora does not own its bootloader or initramfs
 # configuration. Keep the Limine/mkinitcpio policy confined to Arch.
-[[ "$(omarchy-distro)" == "fedora" ]] && exit 0
+[[ "$(omarchy-distro)" == "fedora" || "$(omarchy-distro)" == "fedora-ostree" ]] && exit 0
 
 # Kernel 7.1 unpacks the initramfs asynchronously, which races /init: the
 # early /proc, /sys, /dev, and /run mounts fail while unpacking settles, so

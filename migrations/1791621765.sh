@@ -1,7 +1,7 @@
 # Fedora: mkinitcpio/Limine boot-image rebuilds are Arch-only; Fedora builds
 # its initramfs with dracut and Omedora ships no mkinitcpio drop-ins. Skip on
 # Omedora (the limine-mkinitcpio presence check below would also no-op).
-[[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" ]] && exit 0
+[[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" || "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora-ostree" ]] && exit 0
 
 echo "Rebuild the boot image so a non-Latin keyboard layout stays out of the LUKS prompt"
 

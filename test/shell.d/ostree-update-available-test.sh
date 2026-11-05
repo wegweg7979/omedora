@@ -50,8 +50,26 @@ OMEDORA_OSTREE_JSON="$test_tmp/status.json" "$CHECKER" >/dev/null 2>&1 && status
 pass "older rollback sibling ignored (checks newest ts vs booted ts)"
 
 # Real up-to-date on a genuine bootc host shape (no skopeo seam => skip network).
-fixture '{"deployments":[{"booted":true,"timestamp":123,"container-image-reference":"ostree-image-signed:docker://ghcr.io/acme/im:latest","container-image-reference-digest":"sha256:abc"}]}'
+fixture '{"deployments":[{"booted":true,"staged":false,"timestamp":123,"container-image-reference":"ostree-image-signed:docker://ghcr.io/acme/im:latest","container-image-reference-digest":"sha256:abc"}]}'
 status=""
 OMEDORA_OSTREE_JSON="$test_tmp/status.json" "$CHECKER" >/dev/null 2>&1 && status=0 || status=$?
 [[ $status -eq 1 ]] || fail "current deployment exits 1"
 pass "current deployment: up to date"
+
+# Real rpm-ostree shape with a pending .staged deployment (the authoritative
+# flag): non-booted + staged=true => update pending, regardless of timestamps.
+fixture '{"deployments":[{"booted":true,"staged":false,"timestamp":100,"container-image-reference":"ostree-image-signed:docker://ghcr.io/acme/im:latest","container-image-reference-digest":"sha256:abc"},{"booted":false,"staged":true,"timestamp":200,"container-image-reference-digest":"sha256:new"}]}'
+status=""
+out=$(OMEDORA_OSTREE_JSON="$test_tmp/status.json" "$CHECKER" 2>/dev/null) || status=$?
+[[ ${status:-0} -eq 0 ]] || fail "staged flag deployment exits 0"
+grep -q 'omarchy-ostree-image' "$XDG_STATE_HOME/omarchy/updates/available" || fail "staged flag deployment writes a package line"
+pass "pending .staged=True deployment: exit 0, update listed"
+
+# A deployment that WAS staged but is now the booted one (post-reboot), with
+# staged cleared, MUST NOT be reported again — the original lexicographic '>'
+# compare could misfire here.
+fixture '{"deployments":[{"booted":true,"staged":false,"timestamp":200,"container-image-reference":"ostree-image-signed:docker://ghcr.io/acme/im:latest","container-image-reference-digest":"sha256:abc"},{"booted":false,"staged":false,"timestamp":100,"container-image-reference-digest":"sha256:old"}]}'
+status=""
+OMEDORA_OSTREE_JSON="$test_tmp/status.json" "$CHECKER" >/dev/null 2>&1 && status=0 || status=$?
+[[ $status -eq 1 ]] || fail "post-reboot booted deployment (staged cleared) is up to date"
+pass "post-reboot deployment with staged=False: up to date"

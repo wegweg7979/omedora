@@ -62,14 +62,30 @@ fi
 echo "ostree-update-available: booted_digest=${booted_digest:-?} image_ref=${image_ref:-?}" >&2
 
 # --- 1. staged deployment detect -------------------------------------------------
-# rpm-ostreed.automatic stages a newer image as a non-booted deployment with a
-# newer timestamp. Compare the newest deployment's timestamp to the booted one
-# (NEVER count non-booted deployments — a rollback sibling is also non-booted).
-newest_ts=$(printf '%s' "$json" | jq -r '.deployments | max_by(.timestamp) | .timestamp // empty' 2>/dev/null)
-booted_ts=$(printf '%s' "$json" | jq -r '.deployments[] | select(.booted==true) | .timestamp // empty' 2>/dev/null | head -1)
+# rpm-ostreed.automatic stages a newer image as a non-booted deployment with
+# .staged==true. That flag is the AUTHORITATIVE signal: a reboot applies it
+# (booted==false + staged==true = pending). This is exactly what I ignored
+# before — I compared timestamps with `>` which in bash `[[ ]]` is a
+# LEXICOGRAPHIC string compare, not numeric, so a freshly-booted VM (staged
+# already consumed) could still report a spurious staged update.
+# Fallback for hosts whose rpm-ostree has no .staged field: numeric compare of
+# newest vs booted timestamp (NEVER count non-booted deployments — a rollback
+# sibling is also non-booted; a staged one is distinguishable only by .staged
+# or by being newer than what is booted).
 staged_available=0
-if [[ -n $newest_ts && -n $booted_ts && $newest_ts > $booted_ts ]]; then
-  staged_available=1
+if [[ -n $json ]]; then
+  staged_count=$(printf '%s' "$json" | jq '[.deployments[] | select(.staged==true)] | length' 2>/dev/null || true)
+  if [[ -n $staged_count && $staged_count -ge 1 ]]; then
+    # A staged deployment exists and is not the booted one -> reboot pending.
+    staged_available=1
+  else
+    # No .staged field (older rpm-ostree): numeric timestamp fallback.
+    newest_ts=$(printf '%s' "$json" | jq -r '.deployments | max_by(.timestamp) | .timestamp // empty' 2>/dev/null)
+    booted_ts=$(printf '%s' "$json" | jq -r '.deployments[] | select(.booted==true) | .timestamp // empty' 2>/dev/null | head -1)
+    if [[ -n $newest_ts && -n $booted_ts && $newest_ts -gt $booted_ts ]]; then
+      staged_available=1
+    fi
+  fi
 fi
 
 # --- 2. remote digest detect (network poll fallback) -----------------------------

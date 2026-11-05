@@ -88,16 +88,34 @@ wait_for_pacman_transaction
 mkdir -p "$STATE_DIR"
 [[ -d $MIGRATIONS_DIR ]] || exit 0
 
+failed_migrations=0
+
 while IFS=$'\t' read -r name file marker <&3; do
   [[ -n $name ]] || continue
 
   if [[ ! -f $marker ]]; then
     echo -e "\e[32m\nRunning migration (${name%.sh})\e[0m"
-    OMARCHY_PATH="$OMARCHY_PATH" bash -euo pipefail "$file" 3<&-
-    mkdir -p "$(dirname "$marker")"
-    touch "$marker"
+    if OMARCHY_PATH="$OMARCHY_PATH" bash -euo pipefail "$file" 3<&-; then
+      mkdir -p "$(dirname "$marker")"
+      touch "$marker"
+    else
+      # A failed migration must not abort every migration queued behind it:
+      # one package helper returning a bake-at-build error would otherwise
+      # halt the entire chain and leave later migrations marked as pending
+      # forever. Leave this one's marker unset (it is retried on the next
+      # run), say what failed, and continue with the rest.
+      echo -e "\e[33mMigration ${name%.sh} failed — left pending for the next omarchy-migrate. Continuing with the remaining migrations.\e[0m"
+      failed_migrations=$((failed_migrations + 1))
+    fi
   fi
 done 3< <(migration_entries)
+
+# Surface that something was left pending, without having stopped the chain:
+# a non-zero exit signals the caller there is still work to do on the next run.
+if (( failed_migrations > 0 )); then
+  echo -e "\e[33m$failed_migrations migration(s) failed and were left pending; re-run omarchy-migrate to retry them.\e[0m" >&2
+  exit 1
+fi
 
 # Clear a login-time notification the user left sitting there and then resolved
 # by running migrations some other way. The substring matches both the current

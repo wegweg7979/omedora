@@ -26,7 +26,9 @@ display_columns() {
 
 logo_dimensions() {
   [[ -f $LOGO_FILE ]] || return 1
-  printf '%s %s' "$(display_columns <"$LOGO_FILE")" "$(wc -l <"$LOGO_FILE")"
+  # Strip SGR escape codes before measuring: a colored logo carries ANSI that
+  # wc -L would otherwise count as columns, inflating the About-window size.
+  printf '%s %s' "$(display_columns < <(sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g' "$LOGO_FILE"))" "$(wc -l <"$LOGO_FILE")"
 }
 
 hypr_dispatch() {

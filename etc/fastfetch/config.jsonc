@@ -46,7 +46,8 @@
     {
       "type": "disk",
       "key": "│ ├󰋊",
-      "keyColor": "green"
+      "keyColor": "green",
+      "hideFS": ["overlay", "tmpfs", "devtmpfs", "squashfs", "squashfs.overlay"]
     },
     {
       "type": "memory",
@@ -137,9 +138,9 @@
     },
     {
       "type": "command",
-      "key": "󱦟 OS Age",
+      "key": "󱦟 System Age",
       "keyColor": "magenta",
-      "text": "echo $(( ($(date +%s) - $(stat -c %W /)) / 86400 )) days"
+      "text": "date -d$(ls -alct /var/log --time-style=full-iso 2>/dev/null | tail -1 | awk '{print $6}') +'Installed on %b %d %G' 2>/dev/null || echo N/A"
     },
     {
       "type": "uptime",

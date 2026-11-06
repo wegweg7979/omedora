@@ -6,7 +6,7 @@
 # single omedora COPR. Report that as the channel (avoids the pacman.conf grep
 # errors + the bogus "unknown"). Arch path below is unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
-  fedora)
+  fedora|fedora-ostree)
     copr=$(omedora-copr 2>/dev/null || true)
     echo "${copr:-omedora COPR}"
     exit 0

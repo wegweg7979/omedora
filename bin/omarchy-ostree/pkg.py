@@ -99,6 +99,18 @@ def cmd_add(args: argparse.Namespace) -> int:
             print(f"skipping '{pkg}' on immutable Fedora: {reason}")
             continue
         source = (mapping or {}).get("source", "dnf")  # absence == plain dnf name
+        if source == "skip":
+            # A skip entry installs nothing, so `present` is always false for it
+            # (bin/fedora/pkg.py's is_entry_installed returns False on purpose).
+            # Falling through to the bake-it message below would make every
+            # migration that adds a skip-mapped package exit 1 - and because
+            # omarchy-migrate is `set -e`, that aborts the whole migration run
+            # and blocks every later migration behind it.
+            print(
+                f"skipping '{pkg}' on immutable Fedora: "
+                f"{(mapping or {}).get('reason') or 'no reason given'}"
+            )
+            continue
         # Already installed/baked covers both rpm and flatpak and satisfied_by.
         if _relay(["present", pkg]) == 0:
             print(f"'{pkg}' is already baked into the image (or a satisfying flatpak).")

@@ -21,7 +21,6 @@ failed=0
 for unit in \
   bt-agent.service \
   owed.service \
-  omarchy-recover-internal-monitor.service \
   omarchy-sleep-lock.service \
   omarchy-migrate-notify.service \
   omarchy-fcitx5.service \

@@ -416,7 +416,6 @@ desktop-file-validate %{buildroot}%{_datadir}/wayland-sessions/omedora.desktop
 %{_userunitdir}/omarchy-crash-watch.service
 %{_userunitdir}/omarchy-fcitx5.service
 %{_userunitdir}/omarchy-migrate-notify.service
-%{_userunitdir}/omarchy-recover-internal-monitor.service
 %{_userunitdir}/omarchy-sleep-lock.service
 %{_userunitdir}/omarchy-speaker-tuning.service
 %{_userunitdir}/omarchy-tailscale-receive.service

@@ -23,4 +23,10 @@ fi
 
 # Setup leaves the marker if the boot image is not rebuilt and exits 1, which
 # keeps this migration pending for the next omarchy-migrate.
+#
+# The immutable line prunes omarchy-hibernation-setup (no swapfile-based
+# hibernation on the image), so the call is guarded: on the fork this
+# migration is a no-op instead of a command-not-found that leaves it
+# permanently pending.
+command -v omarchy-hibernation-setup >/dev/null || exit 0
 omarchy-hibernation-setup

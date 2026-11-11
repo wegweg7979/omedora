@@ -169,6 +169,9 @@ Merging the 436-commit fork into the tag (179 conflicts to protect 9 commits); c
 | `3d0515658` | 1 | the immutable layer carried; `fedora-ostree` token + dispatch arms merged into upstream's 4.5 bodies |
 | `41d93c637` | 2 | every non-migration dispatch site decided: 9 arms extended, 3 new refusals, 7 comparisons extended |
 | `ee6841ca3` | 3 | 60 migration gates made pattern-compares (`== fedora*`) |
+| `fb5bb5a1e` | 4 | the prune re-asserted: 162 files removed, 41 menu rows, 22 dangling `run_logged` calls, COPR SPECS; plus 14 inline Fedora arms |
+| `170ea80e4` | 5 | packaging follows upstream as-is (investigated, nothing to re-apply) + two tidy-ups |
+| `bebbb9b54` | 6 | the fork-only payload: 87 theme files, 2 docs, the old plan file |
 
 Branch delta vs the tag: **91 files, +648/−79.** Nothing pushed; `omedora-4` untouched.
 
@@ -212,3 +215,50 @@ image — no gate needed.
   pipeline, unreachable on the image because the dispatch arm execs the sibling first.
   Worth a look only if the menu exposes `omarchy update restart` on bootc.
 - `bin/omarchy`'s ~80 lines of group-description pruning: belongs to phase 4.
+
+---
+
+## Phase 5 finding (worth knowing)
+
+**The package map needed nothing.** Upstream's 4.5 `install/packages/fedora.toml` is a
+superset of the fork's — 176 entries against 106, with **zero fork-only entries** — and every
+package the 4.5 migrations `pkg-add` already resolves:
+
+- `fcitx5-mozc/hangul/chinese-addons/chewing`, `xsetroot`, `qt6-imageformats` → Fedora's own
+  repos (checked with `dnf5 repoquery`), no entry needed
+- `omasnap`, `owe`, `hype`, `monologue`, `signed`, `disktree` → names the omedora COPR builds
+  (their specs are in the SPECS list this branch keeps)
+- `omarchy-hyprland-titlebars`, `gliff`, `base-devel`, `asus-proart-p14-speaker-firmware` →
+  skip-mapped upstream, each with a written reason
+- `voxtype` → `voxtype-bin` maps to the COPR's `voxtype` RPM; `bin/omarchy-install-dictation-voxtype`
+  adds it through the map. The 4.5 drop-ins (mise, XKB, sudo timeout, wireplumber camera,
+  docker group) are upstream's and already present.
+
+So the "12-package worklist" from phase 3 was already solved upstream; the only real
+requirement is that the **COPR actually builds** those 4.5 app specs before the image moves.
+
+## Phase 6: deliberately not carried
+
+| file(s) | why |
+|---|---|
+| the 7 voxtype shims | retired by decision 2; 4.5 ships `omarchy-{install,remove}-dictation-voxtype` |
+| `shell/plugins/{notifications/NotificationLogic.js,notifications/components/NotificationCard.qml}` | upstream deleted them in 4.5 |
+| `applications/{Disk Usage,Docker}.desktop` | upstream deleted them in 4.5 |
+| `config/xournalpp/settings.xml` | upstream deleted it in 4.5 |
+| `default/hypr/apps/qemu.lua` | upstream deleted it in 4.5 |
+| `install/user/git.sh` | **dropped (decided)** — superseded: 4.5 moved it to `install/user/first-run/git.sh`, which only prompts (`omarchy-setup-git`) when no global identity is set, instead of unconditionally writing the install-input env vars |
+| `install/config/fix-powerprofilesctl-shebang.sh` | **dropped (decided)** — dead: nothing on the 4.5 tree calls it |
+
+The 75 fork-only `test/` files are a separate test-prune pass (upstream's 4.5 tests also
+reference pruned commands); they are deliberately out of scope for these phases.
+
+## Phase 7 — the gates (needs your side)
+
+1. `just`/spec check: the pruned SPECS list builds for f44 + f45 in `wegweg7979/omedora-4`,
+   including the 4.5 app specs (omasnap, owe, hype, monologue, signed, disktree).
+2. Build the branch's `omedora`/`omedora-settings` at `0.3.0~beta.1` in the COPR.
+3. Image build (hurunagus-hyprland) against the new NEVRA; check the baked payload with
+   `podman run --rm <img> rpm -q omedora` and the `.staged` checker inside it.
+4. Image-repo handoff: the image's package list has to carry the 4.5 base set (the map
+   resolves it), which is an edit to that repo, not this branch.
+5. VM boot before any real machine; then a non-primary box (mini or lounge), not studiobox2.

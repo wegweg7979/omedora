@@ -10,6 +10,7 @@
 # omedora never touched). See omedora/architecture.md §3. Arch path unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) exit 0 ;;
+  fedora-ostree) exit 0 ;;
 esac
 
 set -e

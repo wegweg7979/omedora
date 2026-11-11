@@ -9,6 +9,10 @@ case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
     echo "The AUR is not available on Fedora — use 'omarchy pkg install' instead." >&2
     exit 1
     ;;
+  fedora-ostree)
+    echo "The AUR is not available on Fedora — use 'omarchy pkg install' instead." >&2
+    exit 1
+    ;;
 esac
 
 fzf_args=(

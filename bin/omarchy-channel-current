@@ -11,6 +11,7 @@ set -euo pipefail
 # (omarchy-channel-set is Fedora-gated). Arch path below is unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) echo stable; exit 0 ;;
+  fedora-ostree) echo stable; exit 0 ;;
 esac
 
 # Dev is a linked source checkout: OMARCHY_PATH points somewhere other than

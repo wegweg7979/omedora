@@ -6,6 +6,7 @@
 # dnf transaction. See omedora/architecture.md §3. Arch path below is unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) exit 0 ;;
+  fedora-ostree) exit 0 ;;
 esac
 
 # mise exports GOROOT and GOBIN for its own Go. omarchy-upgrade-to-quattro runs

@@ -12,6 +12,11 @@ case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
     sudo systemctl restart chronyd 2>/dev/null || true
     exit 0
     ;;
+  fedora-ostree)
+    echo "Updating time..."
+    sudo systemctl restart chronyd 2>/dev/null || true
+    exit 0
+    ;;
 esac
 
 echo "Updating time..."

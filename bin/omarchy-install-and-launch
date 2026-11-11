@@ -15,6 +15,13 @@ case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
       set -- "${1-}" "${2-}" "$fedora_app_id"
     fi
     ;;
+  fedora-ostree)
+    read -r -a fedora_packages <<<"${2-}"
+    if (( ${#fedora_packages[@]} )) &&
+      fedora_app_id=$("$(dirname -- "${BASH_SOURCE[0]}")/fedora/pkg.py" app-id "${fedora_packages[@]}"); then
+      set -- "${1-}" "${2-}" "$fedora_app_id"
+    fi
+    ;;
 esac
 
 name="${1-}"

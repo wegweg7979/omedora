@@ -14,6 +14,11 @@ case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
     echo "Run 'omedora update' to get the latest packages."
     exit 0
     ;;
+  fedora-ostree)
+    echo "Channel switching isn't available on Omedora — packages come from the omedora COPR."
+    echo "Run 'omedora update' to get the latest packages."
+    exit 0
+    ;;
 esac
 
 set -euo pipefail

@@ -8,6 +8,7 @@
 # See omedora/architecture.md §3. Arch path below is unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) exit 0 ;;
+  fedora-ostree) exit 0 ;;
 esac
 
 # omarchy-update runs this under set -e as a trusted pre-step, so a failed recv

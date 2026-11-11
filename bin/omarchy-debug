@@ -44,6 +44,11 @@ case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
                 { dnf -q repoquery --userinstalled --qf '%{name} %{version}-%{release}' 2>/dev/null \
                   || rpm -qa --qf '%{name} %{version}-%{release}\n'; } | sort)"
     ;;
+  fedora-ostree)
+    PKG_LIST="$(rpm -q omedora omedora-settings 2>/dev/null
+                { dnf -q repoquery --userinstalled --qf '%{name} %{version}-%{release}' 2>/dev/null \
+                  || rpm -qa --qf '%{name} %{version}-%{release}\n'; } | sort)"
+    ;;
   *)
     PKG_LIST="$({ expac -S '%n %v (%r)' $(pacman -Qqe) 2>/dev/null; comm -13 <(pacman -Sql | sort) <(pacman -Qqe | sort) | xargs -r expac -Q '%n %v (AUR)'; } | sort)"
     ;;

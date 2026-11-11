@@ -21,6 +21,20 @@ case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
       "$(date -d "$last" +"%H:%M")"
     exit 0
     ;;
+  fedora-ostree)
+    # Newest "Upgrade"/"I,U" transaction end time from dnf history.
+    last=$(dnf history list 2>/dev/null \
+      | awk -F'|' 'NR>2 && $3 ~ /[UI]/ { gsub(/^ +| +$/,"",$4); print $4; exit }')
+    if [[ -z $last ]] || ! date -d "$last" &>/dev/null; then
+      echo "${last:-unknown}"
+      exit 0
+    fi
+    locale=$(omarchy-language locale)
+    omarchy-i18n about.updatedAt \
+      "$(LC_TIME=$locale date -d "$last" +"%A %d %B %Y")" \
+      "$(date -d "$last" +"%H:%M")"
+    exit 0
+    ;;
 esac
 
 upgraded=$(grep upgraded /var/log/pacman.log | tail -1 | sed -E 's/\[([^]]+)\].*/\1/')

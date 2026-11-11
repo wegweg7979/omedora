@@ -21,7 +21,7 @@ fi
 # Report the Omedora SemVer (omedora/version, also what omarchy-update-available
 # compares) with the Omarchy base it rebases on; the Arch path below is unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
-  fedora)
+  fedora|fedora-ostree)
     omedora_version=$(cat "$omarchy_path/omedora/version" 2>/dev/null || true)
     base_version=$(cat "$omarchy_path/omedora/base-version" 2>/dev/null || true)
     [[ -n $base_version ]] || base_version=$(cat "$omarchy_path/version" 2>/dev/null || true)
@@ -29,9 +29,9 @@ case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
     [[ -n $omedora_version ]] || omedora_version=$(rpm -q --qf '%{VERSION}' omedora 2>/dev/null || true)
     [[ -n $omedora_version ]] || exit 1
     if [[ -n $base_version ]]; then
-      echo "Omedora $omedora_version (rebased on Omarchy $base_version)"
+      echo "$omedora_version (rebased on Omarchy $base_version)"
     else
-      echo "Omedora $omedora_version"
+      echo "$omedora_version"
     fi
     exit 0
     ;;

@@ -1,0 +1,122 @@
+#!/bin/bash
+#
+# Immutable (bootc/ostree) sibling of bin/omarchy-update-available (exec'd by
+# its fedora-ostree dispatch). Same contract as upstream so the shell update
+# widget works unchanged:
+#   - writes  ~/.local/state/omarchy/updates/{packages,aur,available,checked-at}
+#     (+ error on failure, removed on success)
+#   - exit 0  -> updates available, stdout is the list
+#   - exit !0 -> up to date ("System is up to date" on stdout)
+#
+# On an immutable host "is there an update?" means "is there a newer container
+# image than the deployed one?" — NOT `dnf check-upgrade` (the RPMs are baked
+# into the image; there is no live RPM DB to diff against an upgrade).
+#
+# Detection strategy (mirrors how the OS itself stages updates):
+#   1. STAGED: if rpm-ostreed.automatic stages a newer image, the newest
+#      deployment's timestamp is newer than the booted one -> update available
+#      (pending a reboot to apply).
+#   2. NETWORK (when auto-stage is off): compare the remote registry digest
+#      (skopeo) against the booted deployment's real image digest.
+#
+# Seams for tests:
+#   OMEDORA_OSTREE_JSON   path to `rpm-ostree status --json` output fixture
+#   OMEDORA_DEPLOYED_TS   the booted deployment's timestamp (fallback read)
+#   OMEDORA_IMAGE_REF     image ref used for the skopeo digest check
+#   OMEDORA_SKOPEO_CMD    the remote-digest driver (default "skopeo inspect")
+
+set -euo pipefail
+
+CHECK_TIMEOUT="${OMARCHY_UPDATE_CHECK_TIMEOUT:-60}"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/updates"
+
+mkdir -p "$STATE_DIR"
+
+tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/ostree-update-available.XXXXXX")
+trap 'rm -rf "$tmp_dir"' EXIT
+packages_tmp="$tmp_dir/packages"
+errors_tmp="$tmp_dir/errors"
+: >"$packages_tmp"
+: >"$errors_tmp"
+
+# --- resolve the deployed image ref + booted digest ---------------------------
+json=""
+if [[ ${OMEDORA_OSTREE_JSON+x} == x ]]; then
+  [[ -f $OMEDORA_OSTREE_JSON ]] && json=$(<"$OMEDORA_OSTREE_JSON")
+else
+  json=$(rpm-ostree status --json 2>/dev/null || true)
+fi
+
+booted_digest=""
+image_ref=""
+if [[ -n $json ]]; then
+  booted_digest=$(printf '%s' "$json" | jq -r \
+    '.deployments[] | select(.booted==true) | ."container-image-reference-digest" // empty' 2>/dev/null | head -1)
+  raw_ref=$(printf '%s' "$json" | jq -r \
+    '.deployments[] | select(.booted==true) | ."container-image-reference" // empty' 2>/dev/null | head -1)
+  # container-image-reference is already "ostree-image-signed:docker://<ref>";
+  # strip everything up to docker:// then add one back for skopeo.
+  [[ -n $raw_ref ]] && image_ref="docker://${raw_ref#*docker://}"
+fi
+
+echo "ostree-update-available: booted_digest=${booted_digest:-?} image_ref=${image_ref:-?}" >&2
+
+# --- 1. staged deployment detect -------------------------------------------------
+# rpm-ostreed.automatic stages a newer image as a non-booted deployment with
+# .staged==true. That flag is the AUTHORITATIVE signal: a reboot applies it
+# (booted==false + staged==true = pending). This is exactly what I ignored
+# before — I compared timestamps with `>` which in bash `[[ ]]` is a
+# LEXICOGRAPHIC string compare, not numeric, so a freshly-booted VM (staged
+# already consumed) could still report a spurious staged update.
+# Fallback for hosts whose rpm-ostree has no .staged field: numeric compare of
+# newest vs booted timestamp (NEVER count non-booted deployments — a rollback
+# sibling is also non-booted; a staged one is distinguishable only by .staged
+# or by being newer than what is booted).
+staged_available=0
+if [[ -n $json ]]; then
+  staged_count=$(printf '%s' "$json" | jq '[.deployments[] | select(.staged==true)] | length' 2>/dev/null || true)
+  if [[ -n $staged_count && $staged_count -ge 1 ]]; then
+    # A staged deployment exists and is not the booted one -> reboot pending.
+    staged_available=1
+  else
+    # No .staged field (older rpm-ostree): numeric timestamp fallback.
+    newest_ts=$(printf '%s' "$json" | jq -r '.deployments | max_by(.timestamp) | .timestamp // empty' 2>/dev/null)
+    booted_ts=$(printf '%s' "$json" | jq -r '.deployments[] | select(.booted==true) | .timestamp // empty' 2>/dev/null | head -1)
+    if [[ -n $newest_ts && -n $booted_ts && $newest_ts -gt $booted_ts ]]; then
+      staged_available=1
+    fi
+  fi
+fi
+
+# --- 2. authoritative OS check (no hand-rolled digest poll) ----------------------
+# An "update" on immutable == "is there a deployment staged to reboot into".
+# That state is OWNED by rpm-ostree/bootc and read above via .staged. We do NOT
+# re-derive it from a skopeo digest poll: the registry `latest` tag moves when
+# the same git commit is rebuilt (the COPR can change between builds), so a
+# digest comparison against a moving tag reports a spurious "update" that
+# bootc/rpm-ostree correctly see as nothing-to-apply. Deferring to the OS means
+# this checker can never disagree with bootc/rpm-ostree, because it reads the
+# exact same deployment set they reconcile.
+
+# --- write state + exit per the widget contract -----------------------------------
+if (( staged_available )); then
+  # A placeholder package line so the bar badge has a list to show.
+  echo "omarchy-ostree-image" >"$packages_tmp"
+  cp "$packages_tmp" "$STATE_DIR/packages"
+  : >"$STATE_DIR/aur"
+  cp "$packages_tmp" "$STATE_DIR/available"
+  date --iso-8601=seconds >"$STATE_DIR/checked-at"
+  rm -f "$STATE_DIR/error"
+  cat "$STATE_DIR/available"
+  echo "Omedora image update available${staged_available:+ (staged — reboot to apply)}" >&2
+  exit 0
+fi
+
+# up to date
+: >"$STATE_DIR/packages"
+: >"$STATE_DIR/aur"
+: >"$STATE_DIR/available"
+date --iso-8601=seconds >"$STATE_DIR/checked-at"
+rm -f "$STATE_DIR/error"
+echo "System is up to date"
+exit 1

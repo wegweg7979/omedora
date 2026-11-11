@@ -8,6 +8,13 @@
 
 set -e
 
+# Immutable path: on a bootc/ostree host the whole update is applying a newer
+# container image + a reboot — a different flow with its own runner sibling.
+# Arch + mutable-Fedora bodies below are unchanged.
+case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
+  fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/omarchy-ostree/update" "$@" ;;
+esac
+
 update_stay_awake_stopped=0
 sudo_keepalive_pid=""
 

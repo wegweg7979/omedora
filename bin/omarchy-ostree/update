@@ -1,0 +1,80 @@
+#!/bin/bash
+#
+# Immutable (bootc/ostree) sibling of bin/omarchy-update (exec'd by its
+# fedora-ostree dispatch). On a baked image there is nothing to install into
+# /usr at runtime — an "update" is applying a newer container image, then a
+# reboot. This keeps the Omarchy update command meaningful on an immutable host:
+#
+#   1. Apply the newest image (bootc upgrade, or ujust update on ublue-style
+#      images that wrap rpm-ostree + flatpak + distrobox).
+#   2. Run Omarchy migrations + post-update hooks (image-independent, /etc and
+#      $HOME live on /var + /etc, so they carry across a rebase).
+#   3. Update mise-managed tools.
+#   4. Surface "reboot to apply" — the image takes effect only on next boot.
+#
+# Arch + mutable-Fedora bodies live in the dispatcher (omarchy-update) and are
+# untouched.
+#
+# Seams for tests:
+#   OMEDORA_UPDATE_DRIVER  the image-apply command (default: ujust update if
+#                          ujust exists, else bootc upgrade)
+#   OMEDORA_UPDATE_MISE    0/1 to run the mise step (default 1)
+#   OMEDORA_UPDATE_FLATPAK 0/1 to run flatpak user/system update (default 1)
+
+set -uo pipefail
+
+echo -e "\e[32m\nApply system image update (immutable)\e[0m"
+
+# --- 1. apply the newest image ------------------------------------------------
+update_error=""
+if [[ -n ${OMEDORA_UPDATE_DRIVER:-} ]]; then
+  update_cmd="$OMEDORA_UPDATE_DRIVER"
+elif command -v ujust >/dev/null 2>&1 && command -v bootc >/dev/null 2>&1; then
+  # ublue-style images: ujust update already does rpm-ostree/bootc + flatpak +
+  # distrobox in the right order for that image family.
+  update_cmd="ujust update"
+elif command -v bootc >/dev/null 2>&1; then
+  update_cmd="bootc upgrade"
+else
+  update_cmd="rpm-ostree upgrade"
+fi
+
+echo -e "Running: $update_cmd"
+if ! bash -c "$update_cmd" 2>&1 | tee /tmp/omedora-image-update.log; then
+  update_error="image update failed (see /tmp/omedora-image-update.log); no migration ran"
+fi
+
+# --- 2. migrations + post-update hooks (only on a real apply) -----------------
+if [[ -z $update_error ]]; then
+  command -v omarchy-migrate >/dev/null 2>&1 && omarchy-migrate || true
+  command -v omarchy-hook >/dev/null 2>&1 && omarchy-hook post-update || true
+fi
+
+# --- 3. mise + flatpak (persist on /var and $HOME) ----------------------------
+if [[ ${OMEDORA_UPDATE_MISE:-1} == 1 ]] && command -v mise >/dev/null 2>&1; then
+  echo -e "\nUpdating mise tools"
+  mise upgrade || true
+fi
+if [[ ${OMEDORA_UPDATE_FLATPAK:-1} == 1 ]] && command -v flatpak >/dev/null 2>&1; then
+  echo -e "\nUpdating Flatpak apps"
+  flatpak update -y || true
+fi
+
+# --- 4. reboot to apply ---------------------------------------------------------
+if [[ -z $update_error ]]; then
+  echo -e "\n\e[33mImage update staged. A reboot is required for it to take effect.\e[0m"
+  if command -v gum >/dev/null 2>&1; then
+    if gum confirm "Reboot now to apply the Omedora image update?"; then
+      command -v omarchy-system-reboot >/dev/null 2>&1 \
+        && omarchy-system-reboot \
+        || systemctl reboot
+    else
+      echo "Reboot later. The update is already downloaded; 'reboot' applies it."
+    fi
+  else
+    echo "Run 'omarchy system reboot' (or 'reboot') when you're ready to apply it."
+  fi
+else
+  echo -e "\e[0;31m$update_error\e[0m" >&2
+  exit 1
+fi

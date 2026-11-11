@@ -13,13 +13,13 @@
 # installs never get cross-contaminated by an ABI-incompatible rebuild, but a
 # routine patch bump (3.8.2 -> 3.8.3) does NOT spin up a new COPR.
 #
-#   owner   : $OMEDORA_COPR_OWNER (default: agaspar)
+#   owner   : $OMEDORA_COPR_OWNER (default: wegweg7979)
 #   project : omedora-<major>     (major of the `version` file, e.g. 3.8.2 -> 3)
 #
 # Modes:
-#   (default)   print "owner/project"                     e.g. agaspar/omedora-3
+#   (default)   print "owner/project"                     e.g. wegweg7979/omedora-3
 #   --repo-id   print the dnf repo id dnf records as       e.g.
-#               copr:copr.fedorainfracloud.org:agaspar:omedora-3
+#               copr:copr.fedorainfracloud.org:wegweg7979:omedora-3
 #   --chroot-available [RELEASE]
 #               probe the COPR API for the fedora-RELEASE-ARCH chroot (RELEASE
 #               defaults to the running VERSION_ID, ARCH to `uname -m`). Prints
@@ -39,7 +39,7 @@
 
 set -euo pipefail
 
-owner="${OMEDORA_COPR_OWNER:-agaspar}"
+owner="${OMEDORA_COPR_OWNER:-wegweg7979}"
 
 # Resolve the Omarchy base version file: prefer the installed payload, then the
 # repo this script lives in, then the packaged payload location (installed

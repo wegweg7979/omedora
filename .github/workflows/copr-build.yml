@@ -16,7 +16,7 @@ name: COPR build
 
 on:
   push:
-    # bin/omedora-copr derives agaspar/omedora-4 from this branch's version
+    # bin/omedora-copr derives wegweg7979/omedora-4 from this branch's version
     # file, so spec pushes here submit to the omedora-4 project (live since
     # 2026-06-11). version/omedora-version paths rebuild the self-sourced
     # omedora/omedora-settings packages on release bumps.

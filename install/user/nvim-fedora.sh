@@ -24,7 +24,7 @@
 # aborting the whole install (matching the prior graceful-degrade intent).
 
 # Belt-and-suspenders distro gate (the caller already gates this to Fedora).
-if [[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" != "fedora" ]]; then
+if [[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" != "fedora" && "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" != "fedora-ostree" ]]; then
   return 0 2>/dev/null || exit 0
 fi
 

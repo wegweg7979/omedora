@@ -129,7 +129,7 @@ omarchy-refresh-applications
 # user has none set (an existing installed default is respected) — see
 # install/user/default-apps-fedora.sh. The Arch branch is byte-identical to
 # upstream. Documented in omedora/architecture.md.
-if [[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" ]]; then
+if [[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" || "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora-ostree" ]]; then
   source "$OMARCHY_INSTALL/user/default-apps-fedora.sh"
   # tuned-ppd has the PowerProfiles D-Bus API but not the powerprofilesctl CLI
   # omarchy shells out to; install omedora's shim into ~/.local/bin only-if-absent.

@@ -15,7 +15,7 @@
 # keeps working would be a surprise, not security. The Arch branch is
 # byte-identical to upstream (the relocated line is allowlisted in
 # test/byte-identity-test.sh); see omedora/architecture.md.
-if [[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" ]]; then
+if [[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" || "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora-ostree" ]]; then
   # A shell that is not running or not responding already explained itself on
   # stderr, and it is the notification daemon too, so there is nobody to tell.
   result=$(omarchy-shell lock lock) || exit 1

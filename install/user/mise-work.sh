@@ -4,7 +4,7 @@
 # with --first-install there too) — it would hard-fail the whole finalize. The
 # Arch body below is byte-identical to upstream. See omedora/architecture.md
 # §"Omarchy 4 setup-system gating map".
-if [[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" ]]; then
+if [[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" || "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora-ostree" ]]; then
   source "${BASH_SOURCE[0]%/*}/mise-work-fedora.sh"
   return 0 2>/dev/null || exit 0
 fi

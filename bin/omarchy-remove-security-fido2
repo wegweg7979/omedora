@@ -9,6 +9,7 @@
 # See omedora/architecture.md.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/remove-security-fido2" "$@" ;;
+  fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/remove-security-fido2" "$@" ;;
 esac
 
 set -e

@@ -22,6 +22,7 @@ fi
 # registry-only contract. The Arch body below is unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/locale-generate" "$@" ;;
+  fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/locale-generate" "$@" ;;
 esac
 
 # Root reads only the packaged registry and the real locale.gen; the

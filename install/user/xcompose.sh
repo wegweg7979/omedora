@@ -4,7 +4,7 @@
 # differs. Disclosed at the install plan gate. The Arch path below is
 # byte-identical to upstream (unconditional tee, no backup). Ported from the
 # 3.8.2 install/config/xcompose.sh gate.
-if [[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" ]]; then
+if [[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" || "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora-ostree" ]]; then
   xcompose_payload="$(
     cat <<EOF
 # Run omarchy-restart-xcompose to apply changes

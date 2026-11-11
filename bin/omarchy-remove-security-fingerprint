@@ -9,6 +9,7 @@
 # omedora/architecture.md.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/remove-security-fingerprint" "$@" ;;
+  fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/remove-security-fingerprint" "$@" ;;
 esac
 
 set -e

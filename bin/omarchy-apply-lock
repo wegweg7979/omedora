@@ -18,6 +18,7 @@ fi
 # body below is byte-identical to upstream. See omedora/architecture.md.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/setup-lock" "$@" ;;
+  fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/setup-lock" "$@" ;;
 esac
 
 target_user=${OMARCHY_INSTALL_USER:-${SUDO_USER:-}}

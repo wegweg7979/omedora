@@ -7,6 +7,11 @@
 # pacman transition --overwrite entries apply. Arch path below is unchanged.
 case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/update-system-pkgs" "$@" ;;
+  fedora-ostree)
+    echo "System packages on an immutable image come from the image itself, not from dnf." >&2
+    echo "Run 'omarchy update' (it applies the newer image and asks for a reboot)." >&2
+    exit 1
+    ;;
 esac
 
 set -e

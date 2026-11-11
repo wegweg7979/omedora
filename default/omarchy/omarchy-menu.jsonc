@@ -366,7 +366,6 @@
   "remove.ai.grok-bot": {"icon":"","iconFont":"omarchy","label":"Grok Bot","when":"omarchy-pkg-present grok-bot","action":"omarchy-launch-floating-terminal-with-presentation omarchy-remove-ai-grok-bot"},
   "remove.ai.lm-studio": {"icon":"","iconFont":"omarchy","label":"LM Studio","when":"omarchy-pkg-present lmstudio-bin","action":"omarchy-launch-floating-terminal-with-presentation omarchy-remove-ai-lm-studio"},
   "remove.ai.ollama": {"icon":"","iconFont":"omarchy","label":"Ollama","when":"omarchy-pkg-present ollama","action":"omarchy-launch-floating-terminal-with-presentation omarchy-remove-ai-ollama"},
-  "remove.ai.openclaw": {"icon":"","iconFont":"omarchy","label":"OpenClaw","when":"omarchy-pkg-present openclaw","action":"omarchy-launch-floating-terminal-with-presentation omarchy-remove-ai-openclaw"},
   "remove.ai.perplexity": {"icon":"","iconFont":"omarchy","label":"Perplexity","when":"omarchy-pkg-present perplexity","action":"omarchy-launch-floating-terminal-with-presentation omarchy-remove-ai-perplexity"},
   "remove.ai.t3-code": {"icon":"","iconFont":"omarchy","label":"T3 Code","when":"[[ -f \"$HOME/.local/share/t3code/T3-Code.AppImage\" ]] || omarchy-pkg-present t3code-bin || omarchy-pkg-present t3code-nightly-bin","action":"omarchy-launch-floating-terminal-with-presentation omarchy-remove-ai-t3-code"},
   "remove.development.rails": {"icon":"󰫏","label":"Ruby on Rails","when":"[[ -d $HOME/.local/share/mise/installs/ruby ]]","action":"omarchy-launch-floating-terminal-with-presentation 'omarchy-remove-dev-env ruby'"},

@@ -2,7 +2,7 @@ echo "Light the N1x panel for Plymouth's LUKS prompt"
 
 # omedora: Arch-only on Fedora — initramfs/Plymouth are Fedora's
 # (omedora/AGENTS.md §6).
-[[ "$(omarchy-distro)" == "fedora" ]] && exit 0
+[[ "$(omarchy-distro)" == fedora* ]] && exit 0
 
 # See install/hardware/n1x.sh: the panel stays at its dim power-on backlight
 # until the NVIDIA backlight is first written, which only happened after unlock.

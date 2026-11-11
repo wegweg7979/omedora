@@ -1,6 +1,6 @@
 echo "Tune reclaim for swap on zram"
 
-[[ "$(omarchy-distro)" == "fedora" ]] && exit 0
+[[ "$(omarchy-distro)" == fedora* ]] && exit 0
 
 # Everything here only applies the shipped config early; boot picks it up
 # regardless. Nothing is worth failing the migration chain over, so each step

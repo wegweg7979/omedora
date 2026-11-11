@@ -1,6 +1,6 @@
 echo "Drop Kvantum now that Qt apps follow the theme through the GTK platform theme"
 
-[[ "$(omarchy-distro)" == "fedora" ]] && exit 0
+[[ "$(omarchy-distro)" == fedora* ]] && exit 0
 
 # QT_STYLE_OVERRIDE is gone, so Kvantum is no longer painting anything -- Qt
 # falls back to built-in Fusion and takes its palette from

@@ -1,6 +1,6 @@
 echo "Restore the lock screen PAM service when a Fedora install has lost it"
 
-[[ "$(omarchy-distro)" == "fedora" ]] || exit 0
+[[ "$(omarchy-distro)" == fedora* ]] || exit 0
 
 # The Quickshell lock screen authenticates against this PAM service and refuses
 # to lock while it is missing (shell/plugins/lock answers missing-pam), so

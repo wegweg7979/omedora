@@ -2,7 +2,7 @@ echo "Retain the installed ARM Limine recovery packages during orphan cleanup"
 
 # omedora: Arch-only on Fedora — Limine/ARM orphan bookkeeping is pacman/Limine
 # state Fedora doesn't have.
-[[ "$(omarchy-distro)" == "fedora" ]] && exit 0
+[[ "$(omarchy-distro)" == fedora* ]] && exit 0
 
 [[ $(uname -m) == "aarch64" && -f ${OMARCHY_LIMINE_CONF:-/etc/default/limine} ]] || exit 0
 

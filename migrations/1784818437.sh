@@ -1,6 +1,6 @@
 echo "Gate sudo and polkit fingerprint auth behind the lid state (password when the lid is shut)"
 
-[[ "$(omarchy-distro)" == "fedora" ]] && exit 0
+[[ "$(omarchy-distro)" == fedora* ]] && exit 0
 
 # Existing fingerprint setups have pam_fprintd first in /etc/pam.d/sudo and
 # /etc/pam.d/polkit-1 but no lid gate, so a closed-lid sudo or pkexec would

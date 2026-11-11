@@ -1,6 +1,6 @@
 echo "Repair fingerprint support left without a libfprint"
 
-[[ "$(omarchy-distro)" == "fedora" ]] && exit 0
+[[ "$(omarchy-distro)" == fedora* ]] && exit 0
 
 # An earlier version of this migration swapped libfprint-git for stock
 # libfprint in two steps. A run that failed between them left fprintd with

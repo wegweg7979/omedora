@@ -3,7 +3,7 @@
 # install/user/nvim-fedora.sh), and the version check below uses pacman.
 # Skip on Omedora like migrations/1781587663.sh — the Fedora nvim bootstrap
 # owns the provider contents.
-[[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == "fedora" ]] && exit 0
+[[ "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" == fedora* ]] && exit 0
 
 echo "Repair remote Neovim clipboard yanks and paste"
 

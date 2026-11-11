@@ -2,7 +2,7 @@ echo "Have the N1x firmware reserve 4 GiB for the GPU instead of reclaiming its 
 
 # omedora: Arch-only on Fedora — firmware/kernel parameters are Fedora's
 # (omedora/AGENTS.md §6).
-[[ "$(omarchy-distro)" == "fedora" ]] && exit 0
+[[ "$(omarchy-distro)" == fedora* ]] && exit 0
 
 # See omarchy-apply-n1x-gpu-memory. The firmware's own setting replaces the
 # efi_reclaim_reserved= kernel option the earlier migrations added, which

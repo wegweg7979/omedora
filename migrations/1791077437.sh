@@ -2,7 +2,7 @@ echo "Move NVIDIA N1x laptops to linux-omarchy-n1x and drop the bring-up scaffol
 
 # omedora: Arch-only on Fedora — kernel packages and boot entries are Fedora's
 # (omedora/AGENTS.md §6).
-[[ "$(omarchy-distro)" == "fedora" ]] && exit 0
+[[ "$(omarchy-distro)" == fedora* ]] && exit 0
 
 # See install/hardware/n1x.sh, which sets up new installs the same way.
 limine_conf_dir="${OMARCHY_LIMINE_ENTRY_TOOL_DIR:-/etc/limine-entry-tool.d}"

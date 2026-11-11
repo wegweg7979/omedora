@@ -1,6 +1,6 @@
 echo "Let systemd-oomd kill a runaway app instead of the whole session"
 
-[[ "$(omarchy-distro)" == "fedora" ]] && exit 0
+[[ "$(omarchy-distro)" == fedora* ]] && exit 0
 
 # New installs get this from install/config/enable-services.sh. Existing ones
 # have never had an OOM daemon, so nothing stands between memory pressure and

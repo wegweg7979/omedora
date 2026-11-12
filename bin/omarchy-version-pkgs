@@ -22,7 +22,28 @@ case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
     exit 0
     ;;
   fedora-ostree)
-    # Newest "Upgrade"/"I,U" transaction end time from dnf history.
+    # A composefs image installs nothing at runtime: there is no dnf history to
+    # read, so the honest answer to "when were system packages last upgraded" is
+    # when the running deployment was composed. rpm-ostree reports that as an
+    # epoch in the booted deployment's timestamp.
+    last=$(rpm-ostree status --json 2>/dev/null | python3 -c '
+import json, sys
+try:
+    deployments = json.load(sys.stdin).get("deployments", [])
+except Exception:
+    sys.exit(0)
+for dep in deployments:
+    if dep.get("booted"):
+        print(dep.get("timestamp") or "")
+        break' 2>/dev/null)
+    if [[ -n $last ]] && date -d "@$last" &>/dev/null; then
+      locale=$(omarchy-language locale)
+      omarchy-i18n about.updatedAt \
+        "$(LC_TIME=$locale date -d "@$last" +"%A %d %B %Y")" \
+        "$(date -d "@$last" +"%H:%M")"
+      exit 0
+    fi
+    # Fall back to dnf history (a mutable Fedora reporting this token somehow).
     last=$(dnf history list 2>/dev/null \
       | awk -F'|' 'NR>2 && $3 ~ /[UI]/ { gsub(/^ +| +$/,"",$4); print $4; exit }')
     if [[ -z $last ]] || ! date -d "$last" &>/dev/null; then

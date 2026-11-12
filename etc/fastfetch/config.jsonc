@@ -46,7 +46,8 @@
     {
       "type": "disk",
       "key": "│ ├󰋊",
-      "keyColor": "green"
+      "keyColor": "green",
+      "hideFS": ["overlay", "tmpfs", "devtmpfs", "squashfs", "squashfs.overlay"]
     },
     {
       "type": "memory",
@@ -71,7 +72,7 @@
       "type": "command",
       "key": "\ue900 OS",
       "keyColor": "blue",
-      "text": "if [[ \"$(omarchy-distro 2>/dev/null)\" == fedora || \"$(omarchy-distro 2>/dev/null)\" == fedora-ostree ]]; then echo \"$(omarchy-version) on $(. /etc/os-release; echo \"$NAME $VERSION_ID\")\"; else version=$(omarchy-version) && echo \"Omarchy $version\"; fi"
+      "text": "if [[ \"$(omarchy-distro 2>/dev/null)\" == fedora* ]]; then base=$(cat \"${OMARCHY_PATH:-/usr/share/omarchy}/omedora/base-version\" 2>/dev/null); base=${base%.0}; . /etc/os-release; printf '%s Omarchy %s Fedora %s\\n' \"$NAME\" \"${base:-?}\" \"$VERSION_ID\"; else version=$(omarchy-version) && echo \"Omarchy $version\"; fi"
     },
     {
       "type": "command",
@@ -139,7 +140,7 @@
       "type": "command",
       "key": "󱦟 OS Age",
       "keyColor": "magenta",
-      "text": "days=$(( ($(date +%s) - $(stat -c %W /var/log)) / 86400 )); omarchy-i18n --count \"$days\" about.days \"$days\""
+      "text": "bt=$(stat -c %W /var/log 2>/dev/null); if [[ ${bt:-0} -gt 0 ]]; then days=$(( ($(date +%s) - bt) / 86400 )); printf '%s (since %s)\\n' \"$(omarchy-i18n --count \"$days\" about.days \"$days\")\" \"$(date -d \"@$bt\" +'%b %d %Y')\"; else echo N/A; fi"
     },
     {
       "type": "command",

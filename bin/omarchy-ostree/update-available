@@ -68,18 +68,26 @@ echo "ostree-update-available: booted_digest=${booted_digest:-?} image_ref=${ima
 # before — I compared timestamps with `>` which in bash `[[ ]]` is a
 # LEXICOGRAPHIC string compare, not numeric, so a freshly-booted VM (staged
 # already consumed) could still report a spurious staged update.
-# Fallback for hosts whose rpm-ostree has no .staged field: numeric compare of
-# newest vs booted timestamp (NEVER count non-booted deployments — a rollback
-# sibling is also non-booted; a staged one is distinguishable only by .staged
-# or by being newer than what is booted).
+# Fallback for hosts whose rpm-ostree has no .staged field at all: numeric
+# compare of newest vs booted timestamp (NEVER count non-booted deployments — a
+# rollback sibling is also non-booted). The fallback must key off the FIELD
+# BEING ABSENT, not off the count of staged deployments: `staged==false` is an
+# answer ("nothing pending"), and selecting for `.staged==true` yields a
+# non-empty "0" for it, which is indistinguishable from a missing field. Keying
+# off the count made every host with an explicit `staged:false` take the
+# timestamp path, so a rollback sibling whose commit timestamp is newer than the
+# booted deployment's (which happens for real: a rebuilt image from the same git
+# commit keeps the older commit time, and the booted deployment can be the older
+# commit) reported a phantom "update available" forever — while bootc/rpm-ostree
+# correctly had nothing to do.
 staged_available=0
 if [[ -n $json ]]; then
-  staged_count=$(printf '%s' "$json" | jq '[.deployments[] | select(.staged==true)] | length' 2>/dev/null || true)
-  if [[ -n $staged_count && $staged_count -ge 1 ]]; then
-    # A staged deployment exists and is not the booted one -> reboot pending.
-    staged_available=1
+  if printf '%s' "$json" | jq -e 'any(.deployments[]; has("staged"))' >/dev/null 2>&1; then
+    # Field present -> authoritative: only .staged==true counts.
+    staged_count=$(printf '%s' "$json" | jq '[.deployments[] | select(.staged==true)] | length' 2>/dev/null || echo 0)
+    (( staged_count >= 1 )) && staged_available=1
   else
-    # No .staged field (older rpm-ostree): numeric timestamp fallback.
+    # No .staged field anywhere (older rpm-ostree): numeric timestamp fallback.
     newest_ts=$(printf '%s' "$json" | jq -r '.deployments | max_by(.timestamp) | .timestamp // empty' 2>/dev/null)
     booted_ts=$(printf '%s' "$json" | jq -r '.deployments[] | select(.booted==true) | .timestamp // empty' 2>/dev/null | head -1)
     if [[ -n $newest_ts && -n $booted_ts && $newest_ts -gt $booted_ts ]]; then

@@ -73,3 +73,42 @@ status=""
 OMEDORA_OSTREE_JSON="$test_tmp/status.json" "$CHECKER" >/dev/null 2>&1 && status=0 || status=$?
 [[ $status -eq 1 ]] || fail "post-reboot booted deployment (staged cleared) is up to date"
 pass "post-reboot deployment with staged=False: up to date"
+
+# The live host shape that produced a phantom badge (studiobox2, rpm-ostree
+# 2026.3): BOTH deployments carry an explicit staged=False, but the non-booted
+# ROLLBACK sibling has a NEWER commit timestamp than the booted deployment
+# (a rebuilt image off the same git commit keeps the older commit time, and the
+# host is booted into that older-commit deployment). The pre-fix checker fell
+# into the timestamp fallback because `select(.staged==true) | length` is a
+# non-empty "0", and fired newest_ts > booted_ts -> exit 0 "update available"
+# forever, on a host where bootc/rpm-ostree had nothing to apply.
+fixture '{"deployments":[{"booted":true,"staged":false,"timestamp":1794458360,"version":"latest.20261112-95e6a12","container-image-reference":"ostree-image-signed:docker://ghcr.io/acme/im:latest","container-image-reference-digest":"sha256:3f8f72f9"},{"booted":false,"staged":false,"timestamp":1794496296,"version":"latest.20261112-6ad8d5a","container-image-reference-digest":"sha256:42aca5cf"}]}'
+status=""
+out=$(OMEDORA_OSTREE_JSON="$test_tmp/status.json" "$CHECKER" 2>/dev/null) || status=$?
+[[ ${status:-0} -eq 1 ]] || fail "explicit staged=False on both deployments is up to date (newer rollback sibling must not fire)"
+[[ $out == "System is up to date" ]] || fail "phantom shape prints the up-to-date line"
+[[ ! -s $XDG_STATE_HOME/omarchy/updates/available ]] || fail "phantom shape leaves available empty"
+pass "explicit staged=False + newer rollback sibling: up to date (no phantom update)"
+
+# Same shape, but the sibling IS staged: the field still wins over timestamps.
+fixture '{"deployments":[{"booted":true,"staged":false,"timestamp":1794458360,"container-image-reference":"ostree-image-signed:docker://ghcr.io/acme/im:latest","container-image-reference-digest":"sha256:3f8f72f9"},{"booted":false,"staged":true,"timestamp":1794496296,"container-image-reference-digest":"sha256:42aca5cf"}]}'
+status=""
+out=$(OMEDORA_OSTREE_JSON="$test_tmp/status.json" "$CHECKER" 2>/dev/null) || status=$?
+[[ ${status:-0} -eq 0 ]] || fail "staged sibling still exits 0"
+grep -q 'omarchy-ostree-image' "$XDG_STATE_HOME/omarchy/updates/available" || fail "staged sibling writes a package line"
+pass "explicit staged=True sibling: update listed"
+
+# Legacy shape with NO staged field anywhere keeps the timestamp fallback: a
+# newer non-booted deployment is the only signal such rpm-ostree gives.
+fixture '{"deployments":[{"booted":true,"timestamp":100,"container-image-reference":"ostree-image-signed:docker://ghcr.io/acme/im:latest","container-image-reference-digest":"sha256:abc"},{"booted":false,"timestamp":200,"container-image-reference-digest":"sha256:new"}]}'
+status=""
+OMEDORA_OSTREE_JSON="$test_tmp/status.json" "$CHECKER" >/dev/null 2>&1 && status=0 || status=$?
+[[ $status -eq 0 ]] || fail "legacy host (no staged field) with newer ts still reports an update"
+pass "legacy host without the staged field: timestamp fallback still works"
+
+# Legacy shape with no staged field and nothing newer: up to date.
+fixture '{"deployments":[{"booted":true,"timestamp":200,"container-image-reference":"ostree-image-signed:docker://ghcr.io/acme/im:latest","container-image-reference-digest":"sha256:abc"},{"booted":false,"timestamp":100,"container-image-reference-digest":"sha256:old"}]}'
+status=""
+OMEDORA_OSTREE_JSON="$test_tmp/status.json" "$CHECKER" >/dev/null 2>&1 && status=0 || status=$?
+[[ $status -eq 1 ]] || fail "legacy host (no staged field) with older sibling is up to date"
+pass "legacy host without the staged field: older sibling ignored"

@@ -234,26 +234,27 @@ ALLOW["bin/omarchy-system-shutdown"]='# omarchy:aliases=omarchy shutdown'
 # guarded are re-asserted on commands the port keeps: hidden commands appear in
 # `--all` and not in the default listing, a hyphenated canonical route keeps its
 # spaced filename route (dev-env, theme bg-switcher), and requires_sudo is still
-# exposed (omarchy-debug). Lines below are the exact upstream texts removed.
-ALLOW["test/cli"]='"$CLI" commands --all --json | jq -e '.commands[] | select(.route == "omarchy dev benchmark cli")' >/dev/null
+# exposed (omarchy-debug). The value below holds the exact upstream texts removed;
+# embedded single quotes are escaped as '"'"' for the single-quoted bash value.
+ALLOW["test/cli"]='"$CLI" commands --all --json | jq -e '"'"'.commands[] | select(.route == "omarchy dev benchmark cli")'"'"' >/dev/null
 pass "benchmark command is discoverable in all commands"
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-install-gaming-xbox-cloud" and .route == "omarchy install gaming xbox-cloud" and .filename_route == "omarchy install gaming xbox cloud" and (.routes | index("omarchy install gaming xbox cloud")))' >/dev/null
+"$CLI" commands --json | jq -e '"'"'.commands[] | select(.binary == "omarchy-install-gaming-xbox-cloud" and .route == "omarchy install gaming xbox-cloud" and .filename_route == "omarchy install gaming xbox cloud" and (.routes | index("omarchy install gaming xbox cloud")))'"'"' >/dev/null
 pass "Xbox Cloud installer keeps hyphenated canonical route"
 
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-install-gaming-xbox-controllers" and .route == "omarchy install gaming xbox-controllers" and .filename_route == "omarchy install gaming xbox controllers" and (.routes | index("omarchy install gaming xbox controllers")))' >/dev/null
+"$CLI" commands --json | jq -e '"'"'.commands[] | select(.binary == "omarchy-install-gaming-xbox-controllers" and .route == "omarchy install gaming xbox-controllers" and .filename_route == "omarchy install gaming xbox controllers" and (.routes | index("omarchy install gaming xbox controllers")))'"'"' >/dev/null
 pass "Xbox controller installer keeps hyphenated canonical route"
 
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-remove-gaming-xbox-controllers" and .route == "omarchy remove gaming xbox-controllers" and .filename_route == "omarchy remove gaming xbox controllers" and (.routes | index("omarchy remove gaming xbox controllers")))' >/dev/null
+"$CLI" commands --json | jq -e '"'"'.commands[] | select(.binary == "omarchy-remove-gaming-xbox-controllers" and .route == "omarchy remove gaming xbox-controllers" and .filename_route == "omarchy remove gaming xbox controllers" and (.routes | index("omarchy remove gaming xbox controllers")))'"'"' >/dev/null
 pass "Xbox controller remover keeps hyphenated canonical route"
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-install-gaming-geforce-now" and .route == "omarchy install gaming geforce-now" and .filename_route == "omarchy install gaming geforce now" and (.routes | index("omarchy install gaming geforce now")))' >/dev/null
+"$CLI" commands --json | jq -e '"'"'.commands[] | select(.binary == "omarchy-install-gaming-geforce-now" and .route == "omarchy install gaming geforce-now" and .filename_route == "omarchy install gaming geforce now" and (.routes | index("omarchy install gaming geforce now")))'"'"' >/dev/null
 pass "GeForce NOW installer keeps hyphenated canonical route"
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-remove-gaming-geforce-now" and .route == "omarchy remove gaming geforce-now" and .filename_route == "omarchy remove gaming geforce now" and (.routes | index("omarchy remove gaming geforce now")))' >/dev/null
+"$CLI" commands --json | jq -e '"'"'.commands[] | select(.binary == "omarchy-remove-gaming-geforce-now" and .route == "omarchy remove gaming geforce-now" and .filename_route == "omarchy remove gaming geforce now" and (.routes | index("omarchy remove gaming geforce now")))'"'"' >/dev/null
 pass "GeForce NOW remover keeps hyphenated canonical route"
 
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-install-gaming-gpu-lib32" and .route == "omarchy install gaming gpu-lib32" and .filename_route == "omarchy install gaming gpu lib32" and (.routes | index("omarchy install gaming gpu lib32")))' >/dev/null
+"$CLI" commands --json | jq -e '"'"'.commands[] | select(.binary == "omarchy-install-gaming-gpu-lib32" and .route == "omarchy install gaming gpu-lib32" and .filename_route == "omarchy install gaming gpu lib32" and (.routes | index("omarchy install gaming gpu lib32")))'"'"' >/dev/null
 pass "GPU lib32 installer keeps hyphenated canonical route"
 
-"$CLI" commands --json | jq -e '.commands[] | select(.binary == "omarchy-refresh-pacman" and .requires_sudo == true)' >/dev/null'
+"$CLI" commands --json | jq -e '"'"'.commands[] | select(.binary == "omarchy-refresh-pacman" and .requires_sudo == true)'"'"' >/dev/null'
 
 # --- the audit ---------------------------------------------------------------
 # Modified upstream files = files that differ from the pin AND exist on the pin

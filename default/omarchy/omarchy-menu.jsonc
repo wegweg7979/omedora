@@ -310,7 +310,7 @@
   "install.ai.t3-code": {"icon":"","iconFont":"omarchy","label":"T3 Code","disabled":"[[ -f \"$HOME/.local/share/t3code/T3-Code.AppImage\" ]]","action":"omarchy-launch-floating-terminal-with-presentation omarchy-install-ai-t3-code"},
   "install.gaming.minecraft": {"icon":"󰍳","label":"Minecraft","when":"omarchy-hw-x86","disabled":"omarchy-pkg-present minecraft-launcher","action":"omarchy-install-and-launch Minecraft minecraft-launcher minecraft-launcher"},
   "install.development.rails": {"icon":"󰫏","label":"Ruby on Rails","disabled":"[[ -d $HOME/.local/share/mise/installs/ruby ]]","action":"omarchy-launch-floating-terminal-with-presentation 'omarchy-install-dev-env ruby'"},
-  "install.development.docker-dbs": {"icon":"","label":"Docker DB","action":"omarchy-launch-floating-terminal-with-presentation omarchy-install-docker-dbs"},
+  "install.development.docker-dbs": {"icon":"","label":"Docker DB","when":"omarchy-cmd-present docker","action":"omarchy-launch-floating-terminal-with-presentation omarchy-install-docker-dbs"},
   "install.development.javascript": {"icon":"","label":"JavaScript"},
   "install.development.go": {"icon":"","label":"Go","disabled":"[[ -d $HOME/.local/share/mise/installs/go ]]","action":"omarchy-launch-floating-terminal-with-presentation 'omarchy-install-dev-env go'"},
   "install.development.php": {"icon":"","label":"PHP"},

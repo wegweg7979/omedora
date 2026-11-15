@@ -195,7 +195,8 @@ ALLOW["default/omarchy/omarchy-menu.jsonc"]='  "install.aur": {"icon":"󰣇","la
   "install.style.font.fira": {"icon":"","label":"Fira Code","action":"omarchy-install-font '"'"'Fira Code'"'"' ttf-firacode-nerd '"'"'FiraCode Nerd Font'"'"'"},
   "install.style.font.victor": {"icon":"","label":"Victor Code","action":"omarchy-install-font '"'"'Victor Code'"'"' ttf-victor-mono-nerd '"'"'VictorMono Nerd Font'"'"'"},
   "install.style.font.bitstream": {"icon":"","label":"Bitstream Vera Mono","action":"omarchy-install-font '"'"'Bitstream Vera Code'"'"' ttf-bitstream-vera-mono-nerd '"'"'BitstromWera Nerd Font'"'"'"},
-  "install.style.font.iosevka": {"icon":"","label":"Iosevka","action":"omarchy-install-font Iosevka ttf-iosevka-nerd '"'"'Iosevka Nerd Font Mono'"'"'"},'
+  "install.style.font.iosevka": {"icon":"","label":"Iosevka","action":"omarchy-install-font Iosevka ttf-iosevka-nerd '"'"'Iosevka Nerd Font Mono'"'"'"},
+  "install.development.docker-dbs": {"icon":"","label":"Docker DB","action":"omarchy-launch-floating-terminal-with-presentation omarchy-install-docker-dbs"},'
 # default/agents/skills/omarchy/SKILL.md: the shipped agent skill sent Fedora users
 # (mutable and bootc alike) to pacman/AUR for package installs, promised a writable
 # /usr, and reset configs with a bare `omarchy reinstall` — all false or dead ends on

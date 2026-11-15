@@ -62,19 +62,13 @@ rows = json.loads(Path(sys.argv[2]).read_text())
 package_map = tomllib.loads((root / "install/packages/fedora.toml").read_text())
 
 # Reviewed: these names resolve unchanged on Fedora 44 (main/updates) or RPM
-# Fusion (steam, dropbox: nonfree), verified with `dnf repoquery` 2026-10-27.
+# Fusion, verified with `dnf repoquery` 2026-10-27. Names whose only users were
+# the pruned gaming/retroarch rows came out with those rows — the audit's own
+# stale-entry check below enforces that.
 SAME_ON_FEDORA = {
-  "alacritty", "chromium", "clang", "dropbox", "firefox", "flatpak", "foot",
-  "fprintd", "freerdp", "fuse3", "gum", "helix", "kitty", "libyaml", "lutris",
-  "neovim", "ollama", "pam-u2f", "php", "rlwrap", "steam", "tailscale",
-  "wine-mono", "winetricks", "wtype",
-  # omarchy-install-gaming-retroarch's Fedora arm installs Fedora's own names.
-  "retroarch", "retroarch-assets", "retroarch-database", "retroarch-filters",
-  "libretro-beetle-ngp", "libretro-beetle-pce-fast", "libretro-beetle-vb",
-  "libretro-beetle-wswan", "libretro-bsnes-mercury", "libretro-desmume2015",
-  "libretro-gambatte", "libretro-gw", "libretro-handy", "libretro-mgba",
-  "libretro-nestopia", "libretro-pcsx-rearmed", "libretro-prosystem",
-  "libretro-stella2014",
+  "alacritty", "chromium", "clang", "firefox", "foot", "fprintd", "fuse3",
+  "helix", "kitty", "libyaml", "neovim", "ollama", "pam-u2f", "php", "rlwrap",
+  "wtype",
 }
 
 # Ungated rows that install a skip-mapped package next to the ones that matter.
@@ -82,13 +76,6 @@ PARTIAL_SKIPS = {
   ("install.preinstalls", "aether"): "bulk reinstall of the removable preinstalls; the rest install",
   ("install.preinstalls", "cliamp"): "bulk reinstall of the removable preinstalls; the rest install",
   ("install.service.bitwarden", "bitwarden-cli"): "the Bitwarden desktop app installs from Flathub",
-  ("install.gaming.lutris", "umu-launcher"): "Lutris runs without umu-launcher",
-  ("install.gaming.steam", "lib32-nvidia-utils"): "NVIDIA lib32 userspace comes with the user's driver",
-  ("install.gaming.steam", "lib32-nvidia-580xx-utils"): "NVIDIA lib32 userspace comes with the user's driver",
-  ("install.gaming.lutris", "lib32-nvidia-utils"): "NVIDIA lib32 userspace comes with the user's driver",
-  ("install.gaming.lutris", "lib32-nvidia-580xx-utils"): "NVIDIA lib32 userspace comes with the user's driver",
-  ("install.gaming.heroic", "lib32-nvidia-utils"): "NVIDIA lib32 userspace comes with the user's driver",
-  ("install.gaming.heroic", "lib32-nvidia-580xx-utils"): "NVIDIA lib32 userspace comes with the user's driver",
 }
 
 # Installers that take their packages from the action rather than from a

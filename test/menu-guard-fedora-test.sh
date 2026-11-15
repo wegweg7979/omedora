@@ -14,6 +14,15 @@
 # rpm/flatpak (test/mocks) that report packages installed, and a pacman that
 # records any call and knows nothing, so an answer that came from pacman would
 # hide the rows asserted to show.
+#
+# ROWS must name rows the SHIPPED menu still has: guardScript() exits 1 on an id
+# that is not there, which aborts the whole L1 job before the later gates (the
+# byte-identity audit among them) get to run. That is how this test went red when
+# the OpenClaw rows were pruned as dead 4.5 additions — prune a row, drop it here
+# in the same change. Each id below also carries a distinct guard mechanism: a
+# mapped RPM (voxtype-bin → voxtype), a names-aliased RPM (vim → vim-enhanced), a
+# package with no map entry at all (firefox, resolved natively), a Flathub app
+# (slack-desktop), and two skip-mapped names.
 
 set -euo pipefail
 
@@ -85,7 +94,7 @@ run_batch() {
   OMARCHY_DISTRO="$distro" PATH="$STUBS:$ROOT/bin:$PATH" bash -c "$script" | sort
 }
 
-ROWS=(remove.dictation remove.dictation.voxtype remove.dictation.superwhisper install.ai.openclaw remove.ai.openclaw install.ai.grok-bot remove.ai.grok-bot install.service.slack)
+ROWS=(remove.dictation remove.dictation.voxtype remove.dictation.superwhisper install.editor.vim remove.browser.firefox install.ai.grok-bot remove.ai.grok-bot install.service.slack)
 script=$(guard_script "${ROWS[@]}")
 
 # --- Fedora: every RPM and Flatpak reports installed ------------------------
@@ -94,8 +103,8 @@ answers=$(MOCK_RPM_INSTALLED="*" MOCK_FLATPAK_INSTALLED="com.slack.Slack" run_ba
 
 assert_output_contains "Fedora: Remove > Dictation shows with voxtype installed" "$answers" "remove.dictation:w:1"
 assert_output_contains "Fedora: Remove > Dictation > Voxtype shows (voxtype-bin → voxtype RPM)" "$answers" "remove.dictation.voxtype:w:1"
-assert_output_contains "Fedora: Install > AI > OpenClaw is disabled once the openclaw RPM is installed" "$answers" "install.ai.openclaw:d:1"
-assert_output_contains "Fedora: Remove > AI > OpenClaw shows once the openclaw RPM is installed" "$answers" "remove.ai.openclaw:w:1"
+assert_output_contains "Fedora: Install > Editor > Vim is disabled once vim-enhanced is installed (vim → vim-enhanced)" "$answers" "install.editor.vim:d:1"
+assert_output_contains "Fedora: Remove > Browser > Firefox shows (no map entry: resolved natively through rpm)" "$answers" "remove.browser.firefox:w:1"
 assert_output_contains "Fedora: a Flathub-mapped app reads as installed (slack-desktop → com.slack.Slack)" "$answers" "install.service.slack:d:1"
 
 # A skip-mapped package has nothing installed on Fedora, so its Remove row must
@@ -114,7 +123,8 @@ pass "Fedora: one flatpak listing answers every Flathub-mapped guard"
 
 answers=$(MOCK_RPM_INSTALLED="" MOCK_FLATPAK_INSTALLED="" run_batch fedora "$script")
 assert_output_contains "Fedora: Remove > Dictation > Voxtype hides without voxtype" "$answers" "remove.dictation.voxtype:w:0"
-assert_output_contains "Fedora: Install > AI > OpenClaw stays enabled without openclaw" "$answers" "install.ai.openclaw:d:0"
+assert_output_contains "Fedora: Install > Editor > Vim stays enabled without vim" "$answers" "install.editor.vim:d:0"
+assert_output_contains "Fedora: Remove > Browser > Firefox hides without the firefox RPM" "$answers" "remove.browser.firefox:w:0"
 
 # --- Fedora: the shadows agree with the real helpers ------------------------
 # A name no guard spelled out (built at run time) goes to the real helper.
@@ -134,9 +144,10 @@ assert_equals "Fedora: literal, run-time and missing guards agree with the real 
 
 # --- Arch: the upstream pacman snapshot, unchanged --------------------------
 
-answers=$(PACMAN_INSTALLED="voxtype-bin openclaw" MOCK_RPM_INSTALLED="*" run_batch arch "$script")
+answers=$(PACMAN_INSTALLED="voxtype-bin vim" MOCK_RPM_INSTALLED="*" run_batch arch "$script")
 assert_output_contains "Arch: Remove > Dictation > Voxtype shows from pacman" "$answers" "remove.dictation.voxtype:w:1"
-assert_output_contains "Arch: Install > AI > OpenClaw is disabled from pacman" "$answers" "install.ai.openclaw:d:1"
+assert_output_contains "Arch: Install > Editor > Vim is disabled from pacman" "$answers" "install.editor.vim:d:1"
+assert_output_contains "Arch: firefox absent from pacman hides Remove > Browser > Firefox" "$answers" "remove.browser.firefox:w:0"
 assert_output_contains "Arch: superwhisper-bin absent from pacman hides its Remove row" "$answers" "remove.dictation.superwhisper:w:0"
 grep -q '^pacman -Qq' "$PACMAN_LOG" || fail "Arch: the guard batch reads pacman"
 pass "Arch: the guard batch reads its package set from pacman"

@@ -31,7 +31,8 @@
 #   - scriptlets register both unit scopes; the group is rpm-native sysusers
 #   - Requires libwayland-client (dlopen'ed, invisible to auto-deps);
 #     ExclusiveArch x86_64; License covers the Kenney CC0 art
-#   - hyprpad.spec is registered in build-repo.sh's SPECS array
+#   - hyprpad.spec stays PRUNED from build-repo.sh's SPECS array (the immutable
+#     line removed the gamepad workflow), with the reason recorded inline
 #   - hyprpad.spec.sources pins the sha for exactly Source0's basename
 
 set -euo pipefail
@@ -172,10 +173,18 @@ grep -qE '^ExclusiveArch:[[:space:]]+x86_64\b' "$SPEC" \
   && pass "ExclusiveArch: x86_64" \
   || fail "ExclusiveArch: x86_64"
 
-# --- registered in the COPR build order ----------------------------------------
+# --- pruned from the COPR build order ------------------------------------------
+# The spec stays in the tree (it documents the package), but the immutable line
+# pruned hyprpad from the build list with its reason inline: driving Hyprland
+# from a Steam Controller/gamepad was removed with the gaming workflow, so
+# nothing consumes the package. Asserting the PRUNE is the contract — an
+# upstream rebase must not quietly register a package nothing installs.
 grep -qE '^[[:space:]]*hyprpad\.spec[[:space:]]*$' "$ROOT/omedora/packaging/copr/build-repo.sh" \
-  && pass "hyprpad.spec is registered in build-repo.sh SPECS" \
-  || fail "hyprpad.spec is registered in build-repo.sh SPECS"
+  && fail "hyprpad.spec stays pruned from build-repo.sh SPECS (the gamepad workflow is gone)" \
+  || pass "hyprpad.spec is not registered in build-repo.sh SPECS"
+grep -q 'hyprpad\.spec: PRUNED' "$ROOT/omedora/packaging/copr/build-repo.sh" \
+  && pass "build-repo.sh records why hyprpad is pruned" \
+  || fail "build-repo.sh records why hyprpad is pruned"
 
 # --- .sources pins exactly Source0's basename ----------------------------------
 src0="$(grep -E '^Source0:' "$SPEC" | head -1)"

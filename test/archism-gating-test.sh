@@ -3,11 +3,17 @@
 # L1: the menu-reachable Arch-ism bins gate cleanly on Fedora.
 #
 # Several upstream bins hard-errored on Fedora (pacman / mkinitcpio / AUR names)
-# when reached from the menu. Each now has an additive top-of-file Fedora arm;
-# the Arch path stays byte-identical (byte-identity-test enforces that). Here we
-# check the Fedora behavior: the no-op gates exit 0 and emit NO pacman/mkinitcpio
-# calls, and the install gates dispatch to dnf (not pacman). pacman, mkinitcpio,
-# dracut, sudo, gum are stubbed as tracers; OMARCHY_DISTRO selects the path.
+# when reached from the menu. Each survivor has an additive top-of-file Fedora
+# arm; the Arch path stays byte-identical (byte-identity-test enforces that).
+# Here we check the Fedora behavior: the no-op gate exits 0 and emits NO
+# pacman/mkinitcpio calls, the install gate dispatches to dnf (not pacman), and
+# the Arch body still follows the gate. pacman, mkinitcpio, dracut, sudo, gum
+# are stubbed as tracers; OMARCHY_DISTRO selects the path.
+#
+# The port pruned the boot stack (plymouth) and the pacman-channel family, so
+# those bins are pinned ABSENT below instead of exercised: pinning them gone is
+# the useful assertion, because an upstream merge that brings one back would
+# ship an ungated Arch-ism with no Fedora arm.
 
 set -euo pipefail
 
@@ -35,23 +41,28 @@ export PATH="$BIN:$ROOT/bin:$PATH"
 run() { : >"$MOCK_LOG"; ( export OMARCHY_DISTRO="$1"; shift; bash "$@" ) >"$TMP/out" 2>&1; echo $?; }
 log_has() { grep -qF "$1" "$MOCK_LOG"; }
 
-# --- no-op gates: Fedora exits 0, emits NO pacman/mkinitcpio -----------------
-for bin in omarchy-channel-set omarchy-refresh-pacman omarchy-refresh-plymouth \
-           omarchy-plymouth-reset; do
-  rc=$(run fedora "$ROOT/bin/$bin")
-  assert_equals "$bin: Fedora exits 0" "0" "$rc"
-  if log_has pacman || log_has mkinitcpio; then
-    cat "$MOCK_LOG" >&2; fail "$bin: Fedora path makes no pacman/mkinitcpio call"
+# --- the pruned Arch-ism families stay pruned -------------------------------
+for gone in omarchy-refresh-pacman omarchy-refresh-plymouth omarchy-plymouth-set \
+            omarchy-plymouth-reset omarchy-install-service-sunshine; do
+  if [[ -e $ROOT/bin/$gone ]]; then
+    fail "$gone is pruned on the port; if it comes back it needs its Fedora arm"
   else
-    pass "$bin: Fedora path makes no pacman/mkinitcpio call"
+    pass "$gone stays pruned (the image owns that stack on Fedora)"
   fi
 done
 
-# omarchy-plymouth-set is the silent no-op (called during theme switch).
-rc=$(run fedora "$ROOT/bin/omarchy-plymouth-set" '#fff' '#000' /tmp/logo.png)
-assert_equals "omarchy-plymouth-set: Fedora exits 0" "0" "$rc"
-log_has mkinitcpio && fail "omarchy-plymouth-set: no mkinitcpio on Fedora" \
-  || pass "omarchy-plymouth-set: no mkinitcpio on Fedora"
+# --- no-op gate: Fedora exits 0, emits NO pacman/mkinitcpio -----------------
+
+rc=$(run fedora "$ROOT/bin/omarchy-channel-set")
+assert_equals "omarchy-channel-set: Fedora exits 0" "$rc" "0"
+if log_has pacman || log_has mkinitcpio; then
+  cat "$MOCK_LOG" >&2; fail "omarchy-channel-set: Fedora path makes no pacman/mkinitcpio call"
+else
+  pass "omarchy-channel-set: Fedora path makes no pacman/mkinitcpio call"
+fi
+grep -qF "isn't available on Omedora" "$TMP/out" \
+  && pass "omarchy-channel-set: Fedora says why instead of silently succeeding" \
+  || { cat "$TMP/out" >&2; fail "omarchy-channel-set: Fedora says why instead of silently succeeding"; }
 
 # --- install gates: Fedora dispatches to dnf names, not pacman --------------
 run fedora "$ROOT/bin/omarchy-setup-security-fingerprint" >/dev/null || true
@@ -61,31 +72,22 @@ log_has 'omarchy-pkg-add fprintd fprintd-pam libfprint usbutils' \
   && pass "fingerprint: installs the Fedora package set" \
   || { cat "$MOCK_LOG" >&2; fail "fingerprint: installs the Fedora package set"; }
 
-# Sunshine has no Fedora package source: the command stops before any step.
-rc=$(run fedora "$ROOT/bin/omarchy-install-service-sunshine")
-assert_equals "sunshine: Fedora exits 1" "1" "$rc"
-if [[ -s $MOCK_LOG ]] || ! grep -qF "not available through Omedora on Fedora" "$TMP/out"; then
-  cat "$TMP/out" "$MOCK_LOG" >&2; fail "sunshine: Fedora explains and changes nothing"
+# --- Arch path preserved: the Fedora arm is additive ------------------------
+# byte-identity proves byte-equality; here confirm the Arch body still follows
+# the gate, using the shape the Fedora arms grow (exec the sibling inside the
+# case, the untouched pacman body after it). omarchy-pkg-missing answers "yes,
+# something is missing" so the install body is actually reached.
+if sed -n '/^esac$/,$p' "$ROOT/bin/omarchy-pkg-add" | grep -q 'pacman -S'; then
+  pass "omarchy-pkg-add: the pacman body still follows the Fedora gate"
 else
-  pass "sunshine: Fedora explains and changes nothing"
+  fail "omarchy-pkg-add: the pacman body still follows the Fedora gate"
 fi
-run arch "$ROOT/bin/omarchy-install-service-sunshine" >/dev/null || true
-log_has 'omarchy-pkg-add sunshine' \
-  && pass "sunshine: Arch path still installs the package" \
-  || { cat "$MOCK_LOG" >&2; fail "sunshine: Arch path still installs the package"; }
-
-# --- Arch path preserved: Fedora arm is additive, Arch still calls pacman ----
-# (byte-identity proves byte-equality; here just confirm the Arch path is live.)
-# Upstream's privileged-startup guard (bash -p, checked against /proc) refuses a
-# test harness launch before any pacman call, so prove instead that the Fedora
-# note does not short-circuit Arch and that the pacman body follows the gate.
-rc=$(run arch "$ROOT/bin/omarchy-refresh-pacman" || true)
-if ! grep -qF "isn't available on Omedora" "$TMP/out" &&
-  sed -n '/^esac$/,$p' "$ROOT/bin/omarchy-refresh-pacman" | grep -q 'pacman '; then
-  pass "omarchy-refresh-pacman: Arch path still runs pacman"
-else
-  cat "$TMP/out" >&2; fail "omarchy-refresh-pacman: Arch path still runs pacman"
-fi
+printf '#!/bin/bash\nexit 0\n' >"$BIN/omarchy-pkg-missing"
+chmod +x "$BIN/omarchy-pkg-missing"
+run arch "$ROOT/bin/omarchy-pkg-add" tracer-pkg >/dev/null || true
+log_has 'pacman -S --noconfirm --needed -- tracer-pkg' \
+  && pass "omarchy-pkg-add: Arch path still reaches pacman through sudo" \
+  || { cat "$MOCK_LOG" >&2; fail "omarchy-pkg-add: Arch path still reaches pacman through sudo"; }
 
 # --- debug: Fedora package list uses rpm/dnf, not the expac/pacman pipeline --
 grep -q 'rpm -q omedora omedora-settings' "$ROOT/bin/omarchy-debug" \

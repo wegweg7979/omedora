@@ -272,8 +272,14 @@ echo "# --- finalize-user wiring: the Fedora block sources the step ---"
 grep -q 'nvim-fedora.sh' "$ROOT/bin/omarchy-provision-user" \
   && pass "finalize-user sources the nvim bootstrap step on Fedora" \
   || fail "finalize-user sources the nvim bootstrap step on Fedora"
-# It must live inside the Fedora branch (not the Arch else / unconditionally).
-awk '/== "fedora" \]\]; then/{f=1} /^else$/{f=0} f && /nvim-fedora.sh/{found=1} END{exit !found}' \
+# It must live inside the Fedora branch. That branch's condition is the
+# dual-token one (`== "fedora" || … == "fedora-ostree"`), so arm on any `if`
+# line that names "fedora" and disarm at the branch's `else`: a source above the
+# branch or in the Arch else must not satisfy this.
+awk '/^[[:space:]]*if[[:space:]]/ { armed = ($0 ~ /== "fedora"/) }
+     /^[[:space:]]*else[[:space:]]*$/ { armed = 0 }
+     armed && /nvim-fedora\.sh/ { found = 1 }
+     END { exit !found }' \
   "$ROOT/bin/omarchy-provision-user" \
   && pass "nvim bootstrap is inside the Fedora branch of finalize-user" \
   || fail "nvim bootstrap is inside the Fedora branch of finalize-user"

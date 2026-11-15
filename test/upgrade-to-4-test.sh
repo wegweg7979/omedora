@@ -160,7 +160,10 @@ done
 # omedora-3:` available). Hash-matched fixtures use files this repo ships
 # whose sha256 IS in the upgrader's known-default table (verified):
 #   config/btop/btop.conf        -> a known `refresh` hash
-#   etc/fastfetch/config.jsonc   -> a known `retire` hash
+#   etc/fastfetch/config.jsonc   -> a known `retire` hash (NO LONGER: the port
+#                                  edits that file, so its hash moved off the
+#                                  table — the retire fixture is now
+#                                  default/applications/mimeapps.list below)
 make_home() {
   local h="$1"
   mkdir -p \
@@ -236,8 +239,12 @@ EOF
   printf '# heavily customized by the user\n[font]\nsize = 22\n' >"$h/.config/alacritty/alacritty.toml"
 
   # Hash-matched retired file -> backed up then removed (package owns it now).
-  mkdir -p "$h/.config/fastfetch"
-  cp "$ROOT/etc/fastfetch/config.jsonc" "$h/.config/fastfetch/config.jsonc"
+  # The fixture must be a file whose CURRENT shipped content is still in the
+  # upgrader's known-default table: retire fastfetch/config.jsonc stopped
+  # qualifying when the port made that file brand-aware (its hash changed), so
+  # this uses mimeapps.list, whose shipped copy still hashes to a retire entry.
+  mkdir -p "$h/.config"
+  cp "$ROOT/default/applications/mimeapps.list" "$h/.config/mimeapps.list"
 
   # Customized retired file -> backed up AND kept active as an override.
   printf 'my-custom-terminal.desktop\n' >"$h/.config/xdg-terminals.list"
@@ -476,10 +483,10 @@ compgen -G "$H1/.config/alacritty/alacritty.toml.pre-omedora-4-*" >/dev/null \
   && fail "customized config not needlessly backed up" \
   || pass "customized config not needlessly backed up"
 
-[[ ! -e $H1/.config/fastfetch/config.jsonc ]] \
+[[ ! -e $H1/.config/mimeapps.list ]] \
   && pass "hash-matched retired file removed (package owns it now)" \
   || fail "hash-matched retired file removed (package owns it now)"
-compgen -G "$H1/.config/fastfetch/config.jsonc.pre-omedora-4-*.bak" >/dev/null \
+compgen -G "$H1/.config/mimeapps.list.pre-omedora-4-*.bak" >/dev/null \
   && pass "retired file backed up first" || fail "retired file backed up first"
 
 grep -q "my-custom-terminal" "$H1/.config/xdg-terminals.list" \

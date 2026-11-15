@@ -216,6 +216,16 @@ omarchy update                  # Full system update
 omarchy reinstall
 5. **Is it a package install?** Use `omarchy pkg add <pkgs...>` (or `omarchy pkg aur add <pkgs...>` for AUR-only packages)'
 
+# bin/omarchy-system-{logout,reboot,shutdown}: upstream 4.5 retired these and
+# moved the behaviour into bin/omarchy-system, whose metadata declares the
+# `omarchy logout|reboot|shutdown` aliases. The fork keeps the bins — six files
+# call omarchy-system-reboot by binary name, including bin/omarchy-ostree/update
+# — but they must not ALSO claim those aliases: two owners per route fails
+# `omarchy commands --check`, which upstream's test/cli runs over the tree.
+ALLOW["bin/omarchy-system-logout"]='# omarchy:aliases=omarchy logout'
+ALLOW["bin/omarchy-system-reboot"]='# omarchy:aliases=omarchy reboot'
+ALLOW["bin/omarchy-system-shutdown"]='# omarchy:aliases=omarchy shutdown'
+
 # --- the audit ---------------------------------------------------------------
 # Modified upstream files = files that differ from the pin AND exist on the pin
 # (so omedora-ADDED files like bin/omedora-* are out of scope — they have no

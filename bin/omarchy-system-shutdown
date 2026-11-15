@@ -2,7 +2,6 @@
 
 # omarchy:summary=Shut down after closing application windows
 # omarchy:examples=omarchy shutdown | omarchy system shutdown
-# omarchy:aliases=omarchy shutdown
 
 if [[ ${1:-} == "--inhibited" ]]; then
   # Close windows in the background so they cannot delay power-off.

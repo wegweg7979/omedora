@@ -2,7 +2,6 @@
 
 # omarchy:summary=Reboot after closing application windows
 # omarchy:examples=omarchy reboot | omarchy system reboot
-# omarchy:aliases=omarchy reboot
 
 # Schedule the reboot in the user manager so closing the terminal's systemd
 # scope cannot terminate it before it runs.

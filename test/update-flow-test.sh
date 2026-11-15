@@ -7,7 +7,10 @@
 #            paccache reached, and no sudo prompt for the prune),
 #            system-pkgs updates only the resolved Omedora-managed RPM set,
 #            update-time restarts chronyd (and never aborts when it's absent),
-#            snapshot `create` routes to omedora-snapshot.
+#            snapshotting stays upstream's name with upstream's tolerance
+#            (`omarchy-snapshot create || (($? == 127))` — the port pruned that
+#            command and ships its own tool as omedora-snapshot, so a Fedora
+#            update continues without a snapshot instead of dying).
 #   PART 2 — bin/fedora/update-available writes the same state files the shell
 #            widget reads and honors the upstream exit contract
 #            (0 = updates listed on stdout, 1 = "System is up to date"),
@@ -575,10 +578,20 @@ grep -q "timesyncd" "$MOCK_LOG" \
   && fail "update-time on Fedora never touches systemd-timesyncd" \
   || pass "update-time on Fedora never touches systemd-timesyncd"
 
-run_fedora bash "$ROOT/bin/omarchy-snapshot" create >/dev/null
-grep -q "omedora-snapshot create pre-update" "$MOCK_LOG" \
-  && pass "snapshot create on Fedora routes to omedora-snapshot" \
-  || { cat "$MOCK_LOG" >&2; fail "snapshot create on Fedora routes to omedora-snapshot"; }
+# Snapshotting on Fedora: the port pruned bin/omarchy-snapshot (the snapper
+# shim) and owns its own tool, bin/omedora-snapshot (raw btrfs, exposed as
+# `omedora snapshot`). The pipeline keeps upstream's call site and its exit-127
+# tolerance, so the update proceeds without a snapshot rather than dying — and
+# nothing may quietly reintroduce a bin/omarchy-snapshot shim.
+[[ ! -e "$ROOT/bin/omarchy-snapshot" ]] \
+  && pass "bin/omarchy-snapshot stays pruned (omedora-snapshot is the Fedora tool)" \
+  || fail "bin/omarchy-snapshot is pruned on the port; omedora-snapshot replaces it"
+[[ -x "$ROOT/bin/omedora-snapshot" ]] \
+  && pass "bin/omedora-snapshot is the shipped snapshot tool" \
+  || fail "bin/omedora-snapshot exists and is executable"
+grep -qF 'omarchy-snapshot create || (($? == 127))' "$ROOT/bin/omarchy-update" \
+  && pass "the update pipeline tolerates a missing snapshot (exit 127)" \
+  || fail "the update pipeline tolerates a missing snapshot (exit 127)"
 
 # ===========================================================================
 echo "# --- PART 2: bin/fedora/update-available state contract ---"

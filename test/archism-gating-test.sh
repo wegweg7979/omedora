@@ -26,12 +26,16 @@ BIN="$TMP/bin"; mkdir -p "$BIN"
 MOCK_LOG="$TMP/mock.log"; export MOCK_LOG
 
 for c in pacman mkinitcpio limine-mkinitcpio dracut plymouth-set-default-theme \
-         fprintd-enroll fprintd-verify authselect expac retroarch systemctl ufw; do
+         fprintd-enroll fprintd-verify authselect expac retroarch systemctl ufw \
+         omarchy-hw-fingerprint; do
   printf '#!/bin/bash\nprintf "%s %%s\\n" "$*" >>"%s"\nexit 0\n' "$c" "$MOCK_LOG" >"$BIN/$c"
 done
 # sudo: log + run the rest (so a sudo'd pacman still hits the pacman tracer).
 printf '#!/bin/bash\nprintf "sudo %%s\\n" "$*" >>"%s"\n"$@"\n' "$MOCK_LOG" >"$BIN/sudo"
 # pkg helpers: tracer (so fingerprint/retroarch dnf installs are observable).
+# omarchy-hw-fingerprint is stubbed present (it is in the tracer list above):
+# with no reader on CI the install arms bail before reaching their package set,
+# which would leave the exact behaviour this gate exists for untested.
 for c in omarchy-pkg-add omarchy-pkg-present omarchy-pkg-drop; do
   printf '#!/bin/bash\nprintf "%s %%s\\n" "$*" >>"%s"\nexit 1\n' "$c" "$MOCK_LOG" >"$BIN/$c"
 done

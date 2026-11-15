@@ -28,15 +28,60 @@ SHEEN_REST_TICKS=8
 # rather than spawning a process per frame.
 SHEEN_POLL_FRAMES=20
 
+# Omedora: a branded logo carries its own colour, as SGR runs around its glyphs
+# (`ESC[38;2;...m` ... `ESC[0m`). Slicing such a row by character would cut the
+# runs, and a run cut open would take the band's white for the rest of its
+# length, so a row is split into its runs first and only the part inside the band
+# is re-coloured: a run the band cuts through is given its colour back after it,
+# and a run the band ends inside of keeps the reset that closed it.
+# A plain logo is one uncoloured run, and comes out exactly as upstream drew it.
+#
+# Splits a row into SEG_PREFIX[]/SEG_TEXT[]/SEG_SUFFIX[] triples: the escapes
+# that open a hunk of glyphs, the glyphs themselves, and the escapes that closed
+# it — the reset belongs to the run it ended, not to the gap after it.
+split_row() {
+  SEG_PREFIX=()
+  SEG_TEXT=()
+  SEG_SUFFIX=()
+
+  local rest=$1 prefix="" token chunk last
+
+  while [[ -n $rest ]]; do
+    if [[ $rest == "$ESC"* ]]; then
+      # An escape runs to its final byte; every one this art uses ends in `m`.
+      token=${rest%%m*}m
+      rest=${rest#"$token"}
+      if [[ $token == *'[0m' ]]; then
+        # A reset closes the run that is open. Before any glyphs there is
+        # nothing to close: the row opens on the terminal's own state anyway.
+        last=$(( ${#SEG_TEXT[@]} - 1 ))
+        if (( last >= 0 )) && [[ -z ${SEG_SUFFIX[last]} ]]; then
+          SEG_SUFFIX[last]=$token
+        fi
+        prefix=""
+      else
+        prefix+=$token
+      fi
+      continue
+    fi
+
+    chunk=${rest%%"$ESC"*}
+    SEG_PREFIX+=("$prefix")
+    SEG_TEXT+=("$chunk")
+    SEG_SUFFIX+=("")
+    rest=${rest#"$chunk"}
+  done
+}
+
 # A frame is one string holding every row of the logo, positioned and coloured,
 # so a tick writes the whole logo at once and never shows it half drawn.
 compose_frame() {
   local centre=$1
-  local row line length at from to frame=""
+  local row at from to frame="" index text prefix suffix length col
+  local before after inside
 
   for (( row = 0; row < SHEEN_ROWS; row++ )); do
-    line=${SHEEN_LINES[row]}
-    length=${#line}
+    split_row "${SHEEN_LINES[row]}"
 
     # Where the band crosses this row. Running off the right needs no clamp,
     # because a slice that starts past the end of a line is already empty, but a
@@ -47,8 +92,76 @@ compose_frame() {
     to=$(( at + SHEEN_HALF + 1 ))
     to=$(( to < 0 ? 0 : to ))
 
-    frame+="${ESC}[$((SHEEN_TOP + row));${SHEEN_LEFT}H"
-    frame+="${SHEEN_BASE}${line:0:from}${SHEEN_BAND}${line:from:to - from}${SHEEN_BASE}${line:to}"
+    # A row with no colour of its own is upstream's slice, byte for byte, so the
+    # plain logos this started with animate exactly as they always did. Its cells
+    # are all in the base colour, which is what fastfetch drew them in.
+    if (( ${#SEG_TEXT[@]} == 1 )) && [[ -z ${SEG_PREFIX[0]} ]]; then
+      line=${SHEEN_LINES[row]}
+      frame+="${ESC}[$((SHEEN_TOP + row));${SHEEN_LEFT}H${SHEEN_BASE}"
+      frame+="${line:0:from}${SHEEN_BAND}${line:from:to - from}${SHEEN_BASE}${line:to}"
+      continue
+    fi
+
+    # A row carrying its own colour is restored to the terminal default instead:
+    # fastfetch left the cells the art does not colour in the terminal's own
+    # foreground, not in the base colour, and a glint has to leave them that way.
+    frame+="${ESC}[$((SHEEN_TOP + row));${SHEEN_LEFT}H${ESC}[0m"
+
+    col=0
+    band_open=false
+    for (( index = 0; index < ${#SEG_TEXT[@]}; index++ )); do
+      text=${SEG_TEXT[index]}
+      prefix=${SEG_PREFIX[index]}
+      suffix=${SEG_SUFFIX[index]}
+      length=${#text}
+
+      # The hunk split at the band's edges, in display columns: what falls before
+      # the band, what falls inside it, and what falls after.
+      before=$(( from - col ))
+      (( before < 0 )) && before=0
+      (( before > length )) && before=$length
+      after=$(( to - col ))
+      (( after < 0 )) && after=0
+      (( after > length )) && after=$length
+      inside=$(( after - before ))
+      (( inside < 0 )) && inside=0
+
+      if (( inside == 0 )); then
+        # Wholly outside the band: the run as it was written, opening and closing
+        # escapes included, which is what leaves the gap after it uncoloured.
+        frame+="${prefix}${text}${suffix}"
+      else
+        # The colour opens only on the glyphs the band has not reached: a hunk
+        # the band covers must not set its own colour first, or the white never
+        # lands and the run after it inherits a colour it never had.
+        (( before > 0 )) && frame+="${prefix}${text:0:before}"
+
+        # Opened once per row, on the first hunk the band reaches.
+        if [[ $band_open == false ]]; then
+          frame+="${SHEEN_BAND}"
+          band_open=true
+        fi
+        frame+="${text:before:inside}"
+
+        if (( before + inside < length )); then
+          # The band ends inside this run, so the run resumes in its own colour
+          # and keeps the reset it closed with.
+          frame+="${ESC}[0m${prefix}${text:before+inside}${suffix}"
+          band_open=closed
+        elif (( col + length >= to )); then
+          # It ends on this run's last cell: close it here too, so the white
+          # cannot reach the uncoloured cells after it.
+          frame+="${ESC}[0m"
+          band_open=closed
+        fi
+      fi
+
+      (( col += length ))
+    done
+
+    # A band that ran off the end of the row is closed here, so the next frame
+    # does not start on whatever colour it left behind.
+    [[ $band_open == true ]] && frame+="${ESC}[0m"
   done
 
   SHEEN_COMPOSED=$frame
@@ -59,6 +172,12 @@ compose_frame() {
 # time. Leaves them in SHEEN_FRAMES, and answers whether this logo can be
 # animated at all — one it cannot put back exactly as it found it is one to leave
 # alone, because nothing on screen would say the difference.
+#
+# Omedora: the questions below are asked of the GLYPHS, with the logo's own
+# colour escapes taken off first. They are what the terminal draws and what the
+# band has to address, and a run of escapes is neither — upstream's rule that a
+# character is a cell still holds, it just now applies to the text rather than to
+# the bytes carrying it. The row itself is kept whole and composed from.
 #
 #   sheen_build <logo-file> <top-row> <left-column> <base-colour> <columns-available>
 sheen_build() {
@@ -74,23 +193,27 @@ sheen_build() {
   SHEEN_ROWS=${#SHEEN_LINES[@]}
   (( SHEEN_ROWS > 0 )) || return 1
 
-  local row line width=0
+  local row plain index width=0
   for (( row = 0; row < SHEEN_ROWS; row++ )); do
-    line=${SHEEN_LINES[row]}
+    split_row "${SHEEN_LINES[row]}"
+    plain=""
+    for (( index = 0; index < ${#SEG_TEXT[@]}; index++ )); do
+      plain+=${SEG_TEXT[index]}
+    done
 
     # A renderer substitutes $1 to $9 for colours, so a logo written with those is
     # not the text that reached the screen.
-    [[ $line == *'$'* ]] && return 1
+    [[ $plain == *'$'* ]] && return 1
 
     # These frames slice the row by character and a terminal draws it by column,
     # so one character has to be one cell — and everything that breaks that breaks
     # it here. A wide glyph, a combining mark or a joined emoji is not one cell; a
-    # tab or an escape is one the renderer expanded itself; and a shell whose
-    # locale is counting bytes is not counting characters at all.
-    (( ${#line} == $(printf '%s' "$line" | LC_ALL=C.UTF-8 wc -L) )) || return 1
+    # tab is one the renderer expanded itself; and a shell whose locale is
+    # counting bytes is not counting characters at all.
+    (( ${#plain} == $(printf '%s' "$plain" | LC_ALL=C.UTF-8 wc -L) )) || return 1
 
-    if (( ${#line} > width )); then
-      width=${#line}
+    if (( ${#plain} > width )); then
+      width=${#plain}
     fi
   done
   (( width > 0 && width <= columns )) || return 1

@@ -114,14 +114,84 @@ write_logo '$1████' '  ████'
 refuses "a logo built from colour placeholders is left still"
 write_logo "$(printf 'A\tB')" 'CC'
 refuses "a logo with a tab someone else expands is left still"
-write_logo "$(printf 'A\033[31mB')" 'CCCCC'
-refuses "a logo carrying an escape is left still"
 write_logo 'AAA中文BBB' 'CCCCCCCCCC'
 refuses "a logo with double-width glyphs is left still"
 write_logo "$(printf 'AAAe\xcc\x81BBB')" 'CCCCCCCC'
 refuses "a logo with a combining mark is left still"
 write_logo "$(printf 'AA\xf0\x9f\x91\xa8\xe2\x80\x8d\xf0\x9f\x91\xa9BB')" 'CCCCCCC'
 refuses "a logo with a joined emoji is left still"
+
+# Omedora: the branded logo carries its own colour, as SGR runs around its
+# glyphs. Those runs are what the band must not smear, so a coloured logo is
+# animated here and every cell of every frame is checked against what the art
+# asked for: the glyphs are never rewritten, the cells outside the band keep the
+# colour their own run gave them, the cells the art leaves uncoloured stay
+# uncoloured (that is what fastfetch drew them in), and the band is the only
+# thing painted white.
+green=$'\e[38;2;70;160;110m'
+yellow=$'\e[38;2;250;210;60m'
+reset=$'\e[0m'
+
+printf '%s\n' "${green}████${reset}    ${yellow}████${reset}" "${green}████${reset}    ${yellow}████${reset}" >"$logo"
+build || fail "a coloured logo animates"
+pass "a coloured logo animates"
+
+# One drawn row as "<glyph><TAB><colour>" per cell, walking its escapes.
+cells_of() {
+  local s=$1 i=0 c colour="" out=""
+  while (( i < ${#s} )); do
+    c=${s:i:1}
+    if [[ $c == "$esc" && ${s:i+1:1} == "[" ]]; then
+      colour=${s:i}
+      colour=${colour%%m*}m
+      i=$(( i + ${#colour} ))
+      continue
+    fi
+    out+="$c"$'\t'"${colour:-none}"$'\n'
+    i=$(( i + 1 ))
+  done
+  printf '%s' "$out"
+}
+
+mapfile -t art_rows <"$logo"
+band_width=$(( SHEEN_HALF * 2 + 1 ))
+bad_glyph=0 bad_colour=0 lit_cells=0 rows_lit=0
+for index in "${!SHEEN_FRAMES[@]}"; do
+  row=0
+  while IFS= read -r drawn; do
+    [[ -n $drawn ]] || continue
+    rest=${drawn#*H}
+    row_lit=0
+    while IFS=$'\t' read -r art_glyph art_colour frame_glyph frame_colour; do
+      [[ $art_glyph == "$frame_glyph" ]] || bad_glyph=$(( bad_glyph + 1 ))
+      if [[ $frame_colour == "$esc[97m" || $frame_colour == "$esc[1m" ]]; then
+        row_lit=$(( row_lit + 1 ))
+        lit_cells=$(( lit_cells + 1 ))
+      elif [[ $art_colour != "$frame_colour" ]]; then
+        bad_colour=$(( bad_colour + 1 ))
+      fi
+    done < <(paste <(cells_of "${art_rows[row]}") <(cells_of "$rest"))
+    (( row_lit > band_width )) && bad_colour=$(( bad_colour + 1 ))
+    (( row_lit > 0 )) && rows_lit=$(( rows_lit + 1 ))
+    row=$(( row + 1 ))
+  done < <(printf '%s\n' "${SHEEN_FRAMES[index]}" | sed "s/$esc\[[0-9]*;[0-9]*H/\n&/g")
+done
+
+(( bad_glyph == 0 )) || fail "a coloured logo is never rewritten" "$bad_glyph cells changed"
+pass "the sheen recolours a coloured logo without rewriting it"
+(( bad_colour == 0 )) || fail "a coloured logo keeps the colours outside the band" "$bad_colour cells wrong"
+pass "a coloured logo keeps every colour the band did not reach"
+(( lit_cells > 0 && rows_lit > 0 )) || fail "the band reaches a coloured logo" "lit $lit_cells cells"
+pass "the band crosses a coloured logo too"
+
+# A glint that has passed leaves the art exactly as it found it: the settled
+# frame is the logo's own rows, cell for cell, escapes and all.
+settled_coloured=""
+for row in "${!art_rows[@]}"; do
+  settled_coloured+="$esc[$((top + row));${left}H$esc[0m${art_rows[row]}"
+done
+[[ ${SHEEN_FRAMES[-1]} == "$settled_coloured" ]] || fail "a coloured glint settles back to the art it was given"
+pass "a coloured glint settles back to the art it was given"
 
 # The same check answers for a shell that is counting bytes rather than
 # characters, which is the only thing that would make a block logo unsafe here.

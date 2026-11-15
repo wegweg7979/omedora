@@ -474,13 +474,9 @@ osc_summary=$("$ROOT/bin/omarchy-theme-osc" "$NEXT_THEME/colors.toml" | python -
 [[ $osc_summary == "16 True True True True True True" ]] || fail "theme OSC aliases semantic colors to ANSI palette"
 pass "theme OSC aliases semantic colors to ANSI palette"
 
-preview_output=$(OMARCHY_PATH="$ROOT" HOME="$PI_TMPDIR" "$ROOT/bin/omarchy-dev-theme-preview" "$NEXT_THEME/colors.toml" --no-color)
-assert_output_contains "theme preview shows background to bright_foreground gradient" "$preview_output" "background -> bright_foreground gradient"
-assert_output_contains "theme preview orders light mode ramp light to dark" "$preview_output" "Neutral ramp (lightest -> darkest)"
-assert_output_contains "theme preview includes dark background slots" "$preview_output" "darker_background"
-assert_output_contains "theme preview shows selected text sample" "$preview_output" "This is some [selected text] in a sentence"
-assert_output_contains "theme preview shows practical terminal samples" "$preview_output" "Terminal/UI samples"
-assert_output_contains "theme preview shows ANSI palette strips" "$preview_output" "ANSI palette strips"
+# The dev theme-preview renderer is pruned from this line (dev tooling), so the
+# preview block is gone; the generated-theme assertions below still cover the
+# template helpers and the palette ramps it used to render.
 
 tokyo_fg=$(awk -F'"' '/^foreground =/ { print $2; exit }' "$ROOT/themes/tokyo-night/colors.toml")
 tokyo_light_fg=$(awk -F'"' '/^light_foreground =/ { print $2; exit }' "$ROOT/themes/tokyo-night/colors.toml")

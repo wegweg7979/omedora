@@ -246,6 +246,17 @@ ALLOW["bin/omarchy-system-shutdown"]='# omarchy:aliases=omarchy shutdown'
 # theme bg-switcher), requires_sudo (omarchy-debug), and the hw group help
 # listing a surviving child route (hw intel sof). Value = exact upstream texts
 # removed; embedded single quotes escaped as '"'"' for the bash single-quoted value.
+# test/cli: the Arch contract suite upstream ships asserts on command families
+# the port pruned — gaming (xbox-cloud/controllers/geforce-now/gpu-lib32), the
+# dev benchmark CLI, the dev theme-preview renderer, omarchy-refresh-pacman's sudo
+# metadata, and the `hw asus` partial prefix. A binary or route that no longer
+# exists made `jq -e` find no match (exit 4) or the shell report 127, and the
+# container suite aborted before testing anything else. The properties they
+# guarded are re-asserted on survivors: hidden commands in `--all` and not in the
+# default listing, hyphenated canonical routes (dev-env, theme bg-switcher),
+# requires_sudo (omarchy-debug), and the hw group help listing a surviving child
+# route (hw intel sof). Value = exact upstream texts removed; embedded single
+# quotes escaped as '"'"' for the bash single-quoted value.
 ALLOW["test/cli"]='"$CLI" commands --all --json | jq -e '"'"'.commands[] | select(.route == "omarchy dev benchmark cli")'"'"' >/dev/null
 pass "benchmark command is discoverable in all commands"
 "$CLI" commands --json | jq -e '"'"'.commands[] | select(.binary == "omarchy-install-gaming-xbox-cloud" and .route == "omarchy install gaming xbox-cloud" and .filename_route == "omarchy install gaming xbox cloud" and (.routes | index("omarchy install gaming xbox cloud")))'"'"' >/dev/null
@@ -270,7 +281,14 @@ output=$("$CLI" hw asus)
 assert_output_contains "partial hardware prefix renders matching commands" "$output" "omarchy hw asus rog"
 assert_output_contains "partial hardware prefix includes nested match" "$output" "omarchy hw asus zenbook ux5406aa"
 output=$("$CLI" dev benchmark cli --repeat=1)
-assert_output_contains "benchmark command runs" "$output" "Omarchy CLI benchmark"'
+assert_output_contains "benchmark command runs" "$output" "Omarchy CLI benchmark"
+preview_output=$(OMARCHY_PATH="$ROOT" HOME="$PI_TMPDIR" "$ROOT/bin/omarchy-dev-theme-preview" "$NEXT_THEME/colors.toml" --no-color)
+assert_output_contains "theme preview shows background to bright_foreground gradient" "$preview_output" "background -> bright_foreground gradient"
+assert_output_contains "theme preview orders light mode ramp light to dark" "$preview_output" "Neutral ramp (lightest -> darkest)"
+assert_output_contains "theme preview includes dark background slots" "$preview_output" "darker_background"
+assert_output_contains "theme preview shows selected text sample" "$preview_output" "This is some [selected text] in a sentence"
+assert_output_contains "theme preview shows practical terminal samples" "$preview_output" "Terminal/UI samples"
+assert_output_contains "theme preview shows ANSI palette strips" "$preview_output" "ANSI palette strips"'
 
 
 

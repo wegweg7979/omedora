@@ -248,6 +248,29 @@ for pad in "2 2" "4 5" "0 0" "6 10"; do
 done
 pass "the logo is found wherever fastfetch drew it"
 
+# Omedora: a branded logo carries its own colour as SGR runs. Both things the
+# launcher measures have to be measured on the text the terminal draws: the width
+# it sizes the window by, and the landmark it finds the logo in the render with.
+# Measured on the bytes instead, the width is the escapes' own (174 for a
+# 54-column art) and the landmark is a line that is never on screen, which leaves
+# the window unfitted and the sheen unbuilt.
+green=$'\e[38;2;70;160;110m'
+reset=$'\e[0m'
+printf '%s\n' "${green}████████${reset}" "${green}████${reset}    ${green}████${reset}" >"$LOGO_FILE"
+
+read -r coloured_w coloured_h <<<"$(logo_dimensions)"
+[[ $coloured_w == "12" && $coloured_h == "2" ]] ||
+  fail "a coloured logo is measured by its cells, not its escapes" "measured ${coloured_w}x${coloured_h}"
+pass "a coloured logo is measured by its cells, not its escapes"
+
+esc=$'\e'
+IFS=$'\t' read -r coloured_at coloured_needle < <(logo_landmark)
+[[ $coloured_needle == "████    ████" ]] ||
+  fail "the landmark is the logo's longest line, without its escapes" "$(printf '%q' "$coloured_needle")"
+pass "the landmark is the logo's longest line, without its escapes"
+[[ $coloured_at == "1" ]] || fail "the landmark still says where in the logo it sits" "$coloured_at"
+pass "the landmark still says where in the logo it sits"
+
 # A render that does not contain the file's own text is not this logo, whatever
 # the reason — a config that restyled it, a placeholder fastfetch substituted.
 fastfetch() { printf 'something else entirely\n'; }

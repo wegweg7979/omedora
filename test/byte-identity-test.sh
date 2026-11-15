@@ -353,6 +353,8 @@ CARRIED["shell/plugins/menu/MenuModel.js"]='menu search tolerates dictated punct
 CARRIED["shell/plugins/panels/bluetooth/Model.js"]='Bluetooth panel: rename a device, show its friendly name, match either name'
 CARRIED["shell/plugins/panels/bluetooth/Panel.qml"]='Bluetooth panel: rename a device, show its friendly name'
 CARRIED["test/shell.d/bluetooth-test.sh"]='tests for the Bluetooth rename / friendly-name feature'
+CARRIED["bin/omarchy-launch-about"]='the logo is measured on the text rather than the bytes: logo_dimensions and logo_landmark strip the art SGR runs first, so a branded logo sizes the window for the cells it draws and is still found in the render fastfetch drew (measured raw, the width is the escapes own and the landmark is a line never on screen, which leaves the window at the theme default and the sheen unbuilt)'
+CARRIED["test/shell.d/launch-about-test.sh"]='tests for measuring a coloured logo: the width is its cells, the landmark its longest line without escapes'
 CARRIED["bin/omarchy-branding-about-animation"]='the About sheen animates a logo that carries its own colour: a row is split into its SGR runs, only the cells the band covers are repainted white, and a run the band cuts through is given its colour back. A logo with no colour of its own takes upstream''s slice byte for byte, and everything upstream refused (wide glyphs, tabs, placeholders, escapes it cannot measure) is still refused'
 CARRIED["test/shell.d/branding-about-animation-test.sh"]='tests for the coloured-logo sheen: the escape-refusal case became an animation case, plus per-cell colour and glyph invariants across every frame'
 

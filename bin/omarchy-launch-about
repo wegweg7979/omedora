@@ -67,6 +67,12 @@ display_columns() {
   LC_ALL=C.UTF-8 wc -L
 }
 
+# Everything the launcher measures about the logo is measured on the text, so a
+# logo that carries its own colour is measured the same as a plain one.
+strip_escapes() {
+  sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g'
+}
+
 # A section heading as the config draws it: the title centred in the 52 columns
 # between the box corners.
 about_heading() {
@@ -123,9 +129,13 @@ about_fastfetch() {
   fi
 }
 
+# Omedora: a branded logo carries its own colour, and an escape sequence is not
+# a cell. Measure the text the terminal draws, not the bytes carrying it, or the
+# width is the escapes' own and the window is sized for a logo nobody has —
+# which also stops a remembered fit from ever matching. Rows are rows either way.
 logo_dimensions() {
   [[ -f $LOGO_FILE ]] || return 1
-  printf '%s %s' "$(display_columns <"$LOGO_FILE")" "$(wc -l <"$LOGO_FILE")"
+  printf '%s %s' "$(strip_escapes <"$LOGO_FILE" | display_columns)" "$(wc -l <"$LOGO_FILE")"
 }
 
 hypr_dispatch() {
@@ -297,11 +307,16 @@ measure_layout() {
 # was found back into where the logo starts.
 # Tab-separated, and the offset first, because the line may hold spaces of its
 # own and splitting on them would cut the landmark short.
+# Omedora: the needle this returns is searched for in fastfetch's render with the
+# escapes taken off, so they come off here too. Otherwise the longest line of a
+# coloured logo is a line that was never on screen, the search fails, and the
+# launcher concludes the logo is not where it drew it — which leaves the window
+# unfitted and the sheen unbuilt.
 logo_landmark() {
-  LC_ALL=C.UTF-8 awk '
+  strip_escapes <"$LOGO_FILE" 2>/dev/null | LC_ALL=C.UTF-8 awk '
     { if (length($0) > best) { best = length($0); line = $0; at = NR - 1 } }
     END { if (best > 0) printf "%d\t%s\n", at, line }
-  ' "$LOGO_FILE" 2>/dev/null
+  '
 }
 
 # The About screen's own reasons the logo might not be where these frames would

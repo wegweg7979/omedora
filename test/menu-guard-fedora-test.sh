@@ -176,6 +176,12 @@ assert_output_contains "Immutable: baked Vim still shows, and reads as installed
 answers=$(MOCK_RPM_INSTALLED="vim-enhanced helix" run_batch fedora-ostree "$immutable")
 assert_output_contains "Immutable: Helix shows once the image carries it" "$answers" "install.editor.helix:w:1"
 
+# The map this predicate asks about is Fedora's, so on Arch it must not hide a
+# row: a name the repos do not carry is one upstream expects from the AUR, and
+# the row's own installer is what fails without a helper.
+answers=$(MOCK_RPM_INSTALLED="" run_batch arch "$immutable")
+assert_output_contains "Arch: an installability-gated row still shows" "$answers" "install.editor.helix:w:1"
+
 # --- the Fedora branch is one guarded block --------------------------------
 
 arch_script=$(guard_script remove.dictation.voxtype)

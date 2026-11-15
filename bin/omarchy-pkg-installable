@@ -9,17 +9,8 @@ case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
   fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/omarchy-ostree/pkg.py" installable "$@" ;;
 esac
 
-# Arch: a repo package, or an AUR name when an AUR helper is on PATH.
-for pkg in "$@"; do
-  if pacman -Si -- "$pkg" &>/dev/null; then
-    continue
-  fi
-  for helper in yay paru; do
-    if command -v "$helper" &>/dev/null && "$helper" -Si -- "$pkg" &>/dev/null; then
-      continue 2
-    fi
-  done
-  exit 1
-done
-
+# Arch: the map this asks about is Fedora's, so nothing here is a reason to hide
+# a row. A name the repos do not carry is one upstream expects from the AUR, and
+# the row's own installer is what fails if no helper is there to fetch it — the
+# same answer the menu gave before this predicate existed.
 exit 0

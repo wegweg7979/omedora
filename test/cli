@@ -126,12 +126,13 @@ assert_output_contains "restart group includes inferred commands" "$output" "oma
 assert_output_contains "restart group includes all restart commands" "$output" "omarchy restart wifi"
 
 output=$("$CLI" hw --help)
-assert_output_contains "hardware group help renders" "$output" "omarchy hw asus rog"
+assert_output_contains "hardware group help renders" "$output" "omarchy hw intel sof"
 assert_output_contains "hardware group includes touchpad" "$output" "omarchy hw touchpad"
 
-output=$("$CLI" hw asus)
-assert_output_contains "partial hardware prefix renders matching commands" "$output" "omarchy hw asus rog"
-assert_output_contains "partial hardware prefix includes nested match" "$output" "omarchy hw asus zenbook ux5406aa"
+# No partial-prefix case here: it needs a prefix that matches several routes and
+# does NOT resolve, i.e. the `hw asus` shape. The asus/framework/surface families
+# were pruned with their brand-specific hardware commands and nothing on the tree
+# leaves that ambiguity — the bare `hw --help` assertions above cover the group.
 
 # omarchy-agent takes only flags, so a word after it names the account
 # commands rather than reaching the agent launcher.
@@ -236,8 +237,9 @@ assert_output_contains "pkg add help shows direct route" "$output" "omarchy pkg 
 output=$("$CLI" system reboot --help)
 assert_output_contains "system command help is safe" "$output" "omarchy-system"
 
-output=$("$CLI" dev benchmark cli --repeat=1)
-assert_output_contains "benchmark command runs" "$output" "Omarchy CLI benchmark"
+# The dev benchmark CLI is pruned from this line, so the "a command's own body
+# runs through dispatch" case is covered by the safe-dispatch checks below
+# (theme list / theme current) instead.
 
 "$CLI" theme list >/dev/null
 pass "safe dispatch works for theme list"

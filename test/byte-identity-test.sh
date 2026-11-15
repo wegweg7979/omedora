@@ -236,6 +236,16 @@ ALLOW["bin/omarchy-system-shutdown"]='# omarchy:aliases=omarchy shutdown'
 # spaced filename route (dev-env, theme bg-switcher), and requires_sudo is still
 # exposed (omarchy-debug). The value below holds the exact upstream texts removed;
 # embedded single quotes are escaped as '"'"' for the single-quoted bash value.
+# test/cli: the Arch contract suite upstream ships asserts on command families
+# the port pruned — gaming (xbox-cloud/controllers/geforce-now/gpu-lib32), the
+# dev benchmark CLI, omarchy-refresh-pacman's sudo metadata, and the `hw asus`
+# partial prefix. A binary or route that no longer exists made `jq -e` find no
+# match (exit 4) and the container suite aborted before testing anything else.
+# The properties they guarded are re-asserted on survivors: hidden commands in
+# `--all` and not in the default listing, hyphenated canonical routes (dev-env,
+# theme bg-switcher), requires_sudo (omarchy-debug), and the hw group help
+# listing a surviving child route (hw intel sof). Value = exact upstream texts
+# removed; embedded single quotes escaped as '"'"' for the bash single-quoted value.
 ALLOW["test/cli"]='"$CLI" commands --all --json | jq -e '"'"'.commands[] | select(.route == "omarchy dev benchmark cli")'"'"' >/dev/null
 pass "benchmark command is discoverable in all commands"
 "$CLI" commands --json | jq -e '"'"'.commands[] | select(.binary == "omarchy-install-gaming-xbox-cloud" and .route == "omarchy install gaming xbox-cloud" and .filename_route == "omarchy install gaming xbox cloud" and (.routes | index("omarchy install gaming xbox cloud")))'"'"' >/dev/null
@@ -254,7 +264,15 @@ pass "GeForce NOW remover keeps hyphenated canonical route"
 "$CLI" commands --json | jq -e '"'"'.commands[] | select(.binary == "omarchy-install-gaming-gpu-lib32" and .route == "omarchy install gaming gpu-lib32" and .filename_route == "omarchy install gaming gpu lib32" and (.routes | index("omarchy install gaming gpu lib32")))'"'"' >/dev/null
 pass "GPU lib32 installer keeps hyphenated canonical route"
 
-"$CLI" commands --json | jq -e '"'"'.commands[] | select(.binary == "omarchy-refresh-pacman" and .requires_sudo == true)'"'"' >/dev/null'
+"$CLI" commands --json | jq -e '"'"'.commands[] | select(.binary == "omarchy-refresh-pacman" and .requires_sudo == true)'"'"' >/dev/null
+assert_output_contains "hardware group help renders" "$output" "omarchy hw asus rog"
+output=$("$CLI" hw asus)
+assert_output_contains "partial hardware prefix renders matching commands" "$output" "omarchy hw asus rog"
+assert_output_contains "partial hardware prefix includes nested match" "$output" "omarchy hw asus zenbook ux5406aa"
+output=$("$CLI" dev benchmark cli --repeat=1)
+assert_output_contains "benchmark command runs" "$output" "Omarchy CLI benchmark"'
+
+
 
 # --- the audit ---------------------------------------------------------------
 # Modified upstream files = files that differ from the pin AND exist on the pin

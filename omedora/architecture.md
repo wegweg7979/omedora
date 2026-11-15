@@ -51,9 +51,10 @@ small `pkg-install`/`pkg-remove` siblings:
 | --- | --- |
 | `omarchy-pkg-add`, `-install`, `-aur-add` | Resolve `install/packages/fedora.toml`; install RPMs or Flatpaks, or skip with a reason |
 | `omarchy-pkg-missing`, `-present` | Query translated RPM names or Flatpak IDs |
+| `omarchy-pkg-installable` | Answer whether `add` would really install here. Skip entries and dnf/copr entries an immutable host never baked answer no, so a menu row gated on it stays out of the list where it cannot be fulfilled |
 | `omarchy-pkg-drop`, `-remove` | Remove only translated installed targets |
 | `omarchy-install-and-launch` | Launch a Flathub-mapped app by its Flatpak app id (`pkg.py app-id`) instead of the Arch desktop id |
-| Menu guard batch (`shell/plugins/menu/MenuModel.js`) | Upstream shadows `omarchy-pkg-present`/`-missing` with a pacman set; a carried Fedora branch rebuilds it from one `pkg.py installed <names>` call (one `rpm -q`, one `flatpak list`) so guards agree with the real helpers |
+| Menu guard batch (`shell/plugins/menu/MenuModel.js`) | Upstream shadows `omarchy-pkg-present`/`-missing` with a pacman set; a carried Fedora branch (mutable and immutable both) rebuilds it from one `pkg.py installed <names>` call (one `rpm -q`, one `flatpak list`) so guards agree with the real helpers, and shadows `omarchy-pkg-installable` from one `installable-list` call to the helper for the host's own kind — only when a guard asks for it |
 
 Absence from `fedora.toml` means the package name is valid unchanged through
 dnf. Explicit entries select `dnf`, an allowlisted on-demand `copr`, `flathub`,

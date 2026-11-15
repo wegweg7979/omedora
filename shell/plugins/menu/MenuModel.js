@@ -604,6 +604,27 @@ function guardHelpers() {
 // guards spell out, which is one rpm query and one flatpak listing however
 // many rows ask. A name built at run time was never asked about, so it goes
 // to the real helper rather than reading as absent. Arch never enters this.
+//
+// The mutable and the immutable Fedora both come through here: `installed`
+// answers the same either way (rpm + flatpak), so one batch serves both.
+// `omarchy-pkg-installable` rides along on a SECOND call, to the helper for
+// the host's own kind — a dnf source is installable on mutable Fedora and only
+// installable on immutable when the image already baked it. That is the guard
+// the menu uses to keep rows it cannot fulfil out of the list, so it must
+// answer through the host's own helper, never the sibling's.
+// The names the menu's installability guards spell out, which is a different
+// set from the present/missing ones: a row can ask whether a package is
+// installable without ever asking whether it is installed.
+function installableNames(guards) {
+  var names = {}
+  var calls = String(guards).match(/omarchy-pkg-installable(?:[ \t]+[A-Za-z0-9@_][A-Za-z0-9@._+-]*)+/g) || []
+  for (var i = 0; i < calls.length; i++) {
+    var words = calls[i].split(/[ \t]+/)
+    for (var j = 1; j < words.length; j++) names[words[j]] = true
+  }
+  return Object.keys(names)
+}
+
 function fedoraPackageGuards(guards) {
   var names = {}
   var calls = String(guards).match(/omarchy-pkg-(?:present|missing)(?:[ \t]+[A-Za-z0-9@_][A-Za-z0-9@._+-]*)+/g) || []
@@ -620,12 +641,33 @@ function fedoraPackageGuards(guards) {
       + '  fi\n'
     : ''
 
-  return 'if [[ ${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null)} == fedora ]]; then\n'
+  // Only when a guard actually asks: the menu's own rows mostly do not, and an
+  // unused second helper call would cost every batch an extra rpm/flatpak query.
+  var installableList = installableNames(guards).join(" ")
+  var lookupInstallable = installableList
+    ? '  if __omarchy_pkg_bin=$(type -P omarchy-pkg-installable); then\n' 
+      + '    if [[ $__omarchy_distro == fedora-ostree ]]; then '
+      + '__omarchy_pkg_helper=${__omarchy_pkg_bin%/*}/omarchy-ostree/pkg.py; '
+      + 'else __omarchy_pkg_helper=${__omarchy_pkg_bin%/*}/fedora/pkg.py; fi\n'
+      + '    if [[ -x $__omarchy_pkg_helper ]] '
+      + '&& __omarchy_pkg_can=$("$__omarchy_pkg_helper" installable-list ' + installableList + ' 2>/dev/null); then\n' 
+      + '      for __omarchy_pkg in $__omarchy_pkg_can; do __omarchy_pkgs_can[$__omarchy_pkg]=1; done\n'
+      + '    fi\n'
+      + '  fi\n'
+    : ''
+
+  return '__omarchy_distro=${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null)}\n'
+    + 'if [[ $__omarchy_distro == fedora || $__omarchy_distro == fedora-ostree ]]; then\n'
     + '  __omarchy_pkgs=()\n'
-    + '  declare -A __omarchy_pkg_asked=()\n'
+    + '  declare -A __omarchy_pkg_asked=() __omarchy_pkgs_can=()\n'
     + lookup
+    + lookupInstallable
     + '  __omarchy_pkg_has() { [[ -n ${__omarchy_pkgs[$1]-} ]] && return 0; '
     + '[[ -n ${__omarchy_pkg_asked[$1]-} ]] && return 1; command omarchy-pkg-present "$1" &>/dev/null; }\n'
+    + '  omarchy-pkg-installable() { local __omarchy_p; for __omarchy_p in "$@"; do '
+    + '[[ -n ${__omarchy_pkgs_can[$__omarchy_p]-} ]] && continue; '
+    + '[[ -n ${__omarchy_pkg_asked[$__omarchy_p]-} ]] && return 1; '
+    + 'command omarchy-pkg-installable "$__omarchy_p" &>/dev/null || return 1; done; return 0; }\n'
     + 'fi\n'
 }
 

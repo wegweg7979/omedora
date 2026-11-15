@@ -280,6 +280,36 @@ def cmd_installed(entries: list[Entry], _: argparse.Namespace) -> int:
     return 0
 
 
+def installable_on_mutable(entry: Entry) -> bool:
+    """True when `add` has a real install source here (dnf/copr/flathub).
+
+    A skip entry installs nothing by design and an unmapped name has no Fedora
+    source, so both are "not installable" — the menu uses this to keep rows it
+    cannot fulfil out of the list. It is optimistic about the repo actually
+    carrying the RPM (no repoquery at menu time); the immutable helper, where
+    the RPM set is fixed, is exact.
+    """
+    return entry.source in ("dnf", "copr", "flathub")
+
+
+def cmd_installable(entries: list[Entry], _: argparse.Namespace) -> int:
+    """Exit 0 if EVERY entry is installable, 1 otherwise (mirrors `present`)."""
+    for entry in entries:
+        if not installable_on_mutable(entry):
+            return 1
+    return 0
+
+
+def cmd_installable_list(entries: list[Entry], _: argparse.Namespace) -> int:
+    """Print the installable subset, once per name, in order (the menu's batch)."""
+    seen: set[str] = set()
+    for entry in entries:
+        if entry.package not in seen and installable_on_mutable(entry):
+            print(entry.package)
+        seen.add(entry.package)
+    return 0
+
+
 def cmd_app_id(entries: list[Entry], _: argparse.Namespace) -> int:
     """Print the Flatpak app id of the first Flathub-mapped entry.
 
@@ -565,10 +595,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     subparsers = parser.add_subparsers(dest="action", required=True)
 
-    for name in ("add", "missing", "present", "drop", "aur-add", "app-id"):
+    for name in ("add", "missing", "present", "drop", "aur-add", "app-id", "installable"):
         sp = subparsers.add_parser(name)
         sp.add_argument("packages", nargs="+", metavar="PKG")
     subparsers.add_parser("installed").add_argument("packages", nargs="*", metavar="PKG")
+    subparsers.add_parser("installable-list").add_argument("packages", nargs="*", metavar="PKG")
     subparsers.choices["drop"].add_argument(
         "--rpm",
         action="store_true",
@@ -591,6 +622,8 @@ def main(argv: list[str] | None = None) -> int:
         "aur-add": cmd_aur_add,
         "app-id": cmd_app_id,
         "installed": cmd_installed,
+        "installable": cmd_installable,
+        "installable-list": cmd_installable_list,
     }
     return handlers[args.action](entries, args)
 

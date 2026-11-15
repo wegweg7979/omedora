@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# omarchy:summary=Returns true if every named package could actually be installed on this host (false for skip-mapped or unknown entries).
+# omarchy:args=<packages...>
+
+# Fedora dispatch — see omedora/architecture.md §3. Arch path below is unchanged.
+case "${OMARCHY_DISTRO:-$(omarchy-distro 2>/dev/null || echo arch)}" in
+  fedora) exec "$(dirname -- "${BASH_SOURCE[0]}")/fedora/pkg.py" installable "$@" ;;
+  fedora-ostree) exec "$(dirname -- "${BASH_SOURCE[0]}")/omarchy-ostree/pkg.py" installable "$@" ;;
+esac
+
+# Arch: a repo package, or an AUR name when an AUR helper is on PATH.
+for pkg in "$@"; do
+  if pacman -Si -- "$pkg" &>/dev/null; then
+    continue
+  fi
+  for helper in yay paru; do
+    if command -v "$helper" &>/dev/null && "$helper" -Si -- "$pkg" &>/dev/null; then
+      continue 2
+    fi
+  done
+  exit 1
+done
+
+exit 0

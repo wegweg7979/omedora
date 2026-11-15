@@ -20,6 +20,10 @@ Subcommands (same contract as fedora/pkg.py so the dispatcher wrappers agree):
                              - source == skip                            -> explain
   drop <pkg> [<pkg>...]      Flatpak apps uninstall; dnf/copr RPMs cannot be
                              removed from a baked image -> message + exit 1
+  installable <pkg> [...]    Exit 0 if add would really install or is satisfied
+                             (flathub source, or already baked) -> the menu's
+                             visibility guard; skip/absent answer 1
+  installable-list <pkg> []  Print the installable subset (menu guard batch)
 
 Seams (mirror fedora/pkg.py):
   OMARCHY_FEDORA_MAP, OMARCHY_PKG_DRY_RUN, OMARCHY_PATH (tree root resolution).
@@ -61,6 +65,23 @@ FEDORA_PKG = Path(__file__).resolve().parent.parent / "fedora" / "pkg.py"
 def _load_map() -> dict:
     with open(MAP_PATH, "rb") as fh:
         return tomllib.load(fh)
+
+
+def _relay_capture(fedora_args: list[str]) -> tuple[int, list[str]]:
+    """Run a read-only mutable-helper subcommand and capture its stdout lines."""
+    if not FEDORA_PKG.exists():
+        print(f"mutable pkg helper missing: {FEDORA_PKG}", file=sys.stderr)
+        return 1, []
+    env = dict(os.environ)
+    if DRY_RUN:
+        env["OMARCHY_PKG_DRY_RUN"] = "1"
+    proc = subprocess.run(
+        [sys.executable, str(FEDORA_PKG), *fedora_args],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    return proc.returncode, proc.stdout.split()
 
 
 def _relay(fedora_args: list[str]) -> int:
@@ -135,6 +156,61 @@ def cmd_add(args: argparse.Namespace) -> int:
     return 1 if failed else 0
 
 
+def _installable_names(pkgs: list[str]) -> list[str]:
+    """The subset of `pkgs` whose `add` would actually do something here.
+
+    On an immutable host that means a Flatpak source (installs to /var or
+    $HOME and persists) or a package already baked into the image (its row is
+    satisfied, which is what an Install row of an already-present tool is).
+    A skip entry installs nothing by design and a dnf/copr source that is not
+    baked cannot be installed at all — both are withheld, which is how the
+    menu keeps rows it cannot fulfil out of the list. The baked set comes from
+    ONE `installed` relay, so a whole menu's worth of guards stays one rpm
+    query and one flatpak listing.
+    """
+    wanted: list[str] = []
+    for pkg in pkgs:
+        mapping, active = _entry_of(pkg)
+        if not active:
+            continue
+        source = (mapping or {}).get("source", "dnf")  # absence == plain dnf name
+        if source == "skip":
+            continue
+        if source == "flathub":
+            wanted.append(pkg)
+            continue
+        wanted.append(pkg)  # resolved below against the baked set
+
+    if not wanted:
+        return []
+    _, installed = _relay_capture(["installed", *wanted])
+    baked = set(installed)
+    keep: list[str] = []
+    for pkg in wanted:
+        mapping, _ = _entry_of(pkg)
+        if (mapping or {}).get("source") == "flathub" or pkg in baked:
+            keep.append(pkg)
+    return keep
+
+
+def cmd_installable(args: argparse.Namespace) -> int:
+    """Exit 0 if EVERY named package is installable here, 1 otherwise."""
+    if not args.pkgs:
+        return 0
+    ok = set(_installable_names(args.pkgs))
+    return 0 if all(pkg in ok for pkg in args.pkgs) else 1
+
+
+def cmd_installable_list(args: argparse.Namespace) -> int:
+    """Print the installable subset, once per name, in order (the menu's batch)."""
+    seen: set[str] = set()
+    for pkg in _installable_names(args.pkgs):
+        if pkg not in seen:
+            print(pkg)
+        seen.add(pkg)
+    return 0
+
+
 def cmd_drop(args: argparse.Namespace) -> int:
     failed = False
     for pkg in args.pkgs:
@@ -162,7 +238,7 @@ def cmd_drop(args: argparse.Namespace) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(prog="ostree-pkg")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("present", "missing", "installed", "add", "drop"):
+    for name in ("present", "missing", "installed", "add", "drop", "installable", "installable-list"):
         p = sub.add_parser(name)
         p.add_argument("pkgs", nargs="*")
     args = ap.parse_args()
@@ -172,6 +248,8 @@ def main() -> int:
         "installed": cmd_installed,
         "add": cmd_add,
         "drop": cmd_drop,
+        "installable": cmd_installable,
+        "installable-list": cmd_installable_list,
     }[args.cmd]
     return fn(args)
 

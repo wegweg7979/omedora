@@ -233,6 +233,12 @@ Notes:
   superwhisper-bin` therefore never shows a Remove row or calls a tool Fedora
   never got, and `if omarchy-pkg-missing X; then omarchy-pkg-add X; fi`
   reaches `add`, which logs the skip and installs nothing.
+- `omarchy-pkg-installable` is the companion for the other direction: rather
+  than run `add` and read the refusal, a menu row asks this first and hides
+  where the answer is no — skip entries, unmapped names, and (on an immutable
+  host) dnf/copr entries the image never baked. It answers through the helper
+  for the host kind: a dnf source is installable on mutable Fedora and only
+  installable on bootc once the image carries it.
 - An inactive `since`/`until` table never falls through to the unchanged Arch
   name. It resolves as a skip: `add` and `drop` skip it, `present` fails,
   `missing` succeeds, and managed-update and ownership resolution omit it. The current schema uses

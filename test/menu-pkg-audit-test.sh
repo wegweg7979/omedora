@@ -73,8 +73,9 @@ SAME_ON_FEDORA = {
 
 # Ungated rows that install a skip-mapped package next to the ones that matter.
 PARTIAL_SKIPS = {
-  ("install.preinstalls", "aether"): "bulk reinstall of the removable preinstalls; the rest install",
-  ("install.preinstalls", "cliamp"): "bulk reinstall of the removable preinstalls; the rest install",
+  # install.preinstalls used to sit here (aether/cliamp): the row is now gated on
+  # a host that is not immutable, so the audit never reaches those names — and an
+  # unreachable key is exactly what its own stale-entry check drops.
   ("install.service.bitwarden", "bitwarden-cli"): "the Bitwarden desktop app installs from Flathub",
 }
 

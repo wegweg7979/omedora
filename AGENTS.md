@@ -109,6 +109,7 @@ Use these instead of raw shell commands:
 
 - `omarchy-cmd-missing` / `omarchy-cmd-present` - check for commands
 - `omarchy-pkg-missing` / `omarchy-pkg-present` - check for packages (don't use these if you can just use `omarchy-pkg-add`/`omarchy-pkg-drop`)
+- `omarchy-pkg-installable` - check whether a package could be installed at all: skip-mapped entries and, on an immutable host, dnf/copr entries the image never baked answer false (Flathub and already-baked entries answer true). A menu row that would fail or install nothing hides behind this guard instead of failing when clicked
 - `omarchy-pkg-add` - install packages from the configured pacman repos, Omarchy's included; use `omarchy-pkg-aur-add` for AUR packages
 - `omarchy-pkg-drop` - remove packages; use this instead of raw `pacman -R*`
 - `omarchy-notification-send` - send desktop notifications; do not call `notify-send` directly

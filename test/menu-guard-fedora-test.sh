@@ -154,6 +154,25 @@ pass "Arch: the guard batch reads its package set from pacman"
 [[ ! -s $MOCK_LOG ]] || { cat "$MOCK_LOG" >&2; fail "Arch: the guard batch never asks rpm or flatpak"; }
 pass "Arch: the guard batch never asks rpm or flatpak"
 
+# --- Fedora immutable: installability answers through the ostree helper ------
+# An immutable host cannot dnf install, so a dnf-mapped package is installable
+# there only once the image baked it. The guard has to ask the helper that
+# knows that, not the mutable sibling it shares the batch with.
+
+immutable=$(guard_script install.editor.helix install.editor.vim)
+
+grep -q 'omarchy-ostree/pkg.py" installable-list' <<<"$immutable" || fail "immutable: the installability guard does not pick the ostree helper"
+pass "immutable: the installability guard picks the helper for the host kind"
+grep -q 'omarchy-pkg-installable helix' <<<"$immutable" || fail "immutable: the row's installability guard is missing from the batch"
+pass "immutable: the row's installability guard reaches the batch"
+
+answers=$(MOCK_RPM_INSTALLED="vim-enhanced" run_batch fedora-ostree "$immutable")
+assert_output_contains "Immutable: Helix hides while it is a dnf package the image never baked" "$answers" "install.editor.helix:w:0"
+assert_output_contains "Immutable: baked Vim still shows, and reads as installed" "$answers" "install.editor.vim:d:1"
+
+answers=$(MOCK_RPM_INSTALLED="vim-enhanced helix" run_batch fedora-ostree "$immutable")
+assert_output_contains "Immutable: Helix shows once the image carries it" "$answers" "install.editor.helix:w:1"
+
 # --- the Fedora branch is one guarded block --------------------------------
 
 arch_script=$(guard_script remove.dictation.voxtype)

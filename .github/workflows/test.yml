@@ -147,32 +147,20 @@ jobs:
       - name: Run gpu-screen-recorder-spec static guard
         run: bash test/gpu-screen-recorder-spec-test.sh
 
-      - name: Run HypXR spec static guard
-        run: bash test/hypxr-spec-test.sh
-
       - name: Run ttfx-spec static guard
         run: bash test/ttfx-spec-test.sh
 
       - name: Run mise-spec static guard
         run: bash test/mise-spec-test.sh
 
-      - name: Run openclaw-spec static guard
-        run: bash test/openclaw-spec-test.sh
-
+      # No HypXR / openclaw / basalt-xreal / xreal-ctl / monado-xreal steps:
+      # those guards were deleted with their spec files in the port's phase-4
+      # prune, and a step that runs a missing file exits 127 and fails the job.
       - name: Run hyprpad-spec static guard
         run: bash test/hyprpad-spec-test.sh
 
-      - name: Run basalt-xreal-spec static guard
-        run: bash test/basalt-xreal-spec-test.sh
-
-      - name: Run xreal-ctl-spec static guard
-        run: bash test/xreal-ctl-spec-test.sh
-
       - name: Run kitty-spec static guard
         run: bash test/kitty-spec-test.sh
-
-      - name: Run monado-xreal avoid-power-saver test
-        run: bash test/monado-xreal-avoid-power-saver-test.sh
 
       - name: Run hypr BuildRequires floor guard
         run: bash test/hypr-buildrequires-floor-test.sh

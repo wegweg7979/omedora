@@ -161,7 +161,10 @@ pass "Arch: the guard batch never asks rpm or flatpak"
 
 immutable=$(guard_script install.editor.helix install.editor.vim)
 
-grep -q 'omarchy-ostree/pkg.py" installable-list' <<<"$immutable" || fail "immutable: the installability guard does not pick the ostree helper"
+# The helper path and the call it makes land on separate lines of the batch, so
+# look for both rather than for the concatenation.
+grep -q 'omarchy-ostree/pkg.py' <<<"$immutable" && grep -q 'installable-list' <<<"$immutable" ||
+  fail "immutable: the installability guard does not pick the ostree helper"
 pass "immutable: the installability guard picks the helper for the host kind"
 grep -q 'omarchy-pkg-installable helix' <<<"$immutable" || fail "immutable: the row's installability guard is missing from the batch"
 pass "immutable: the row's installability guard reaches the batch"

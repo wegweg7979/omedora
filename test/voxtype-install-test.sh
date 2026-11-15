@@ -161,10 +161,20 @@ if command -v node >/dev/null; then
     [[ $answers == *"setup.default.dictation.superwhisper:w:$expected"* ]] \
       && pass "$distro: Setup > Defaults > Dictation > Superwhisper when-gate answers $expected" \
       || fail "$distro: Setup > Defaults > Dictation > Superwhisper when-gate answers $expected (got: $answers)"
+    # Voxtype is Fedora's default dictation backend and the COPR carries the RPM,
+    # so the row must not be gated away where it can be installed: its gate is
+    # installability, which answers yes on mutable Fedora (dnf) and on Arch.
+    [[ $answers == *"setup.default.dictation.voxtype:w:1"* ]] \
+      && pass "$distro: Setup > Defaults > Dictation > Voxtype shows where it can be installed" \
+      || fail "$distro: Setup > Defaults > Dictation > Voxtype shows where it can be installed (got: $answers)"
   done
-  [[ $answers != *"setup.default.dictation.voxtype:w:"* ]] \
-    && pass "Setup > Defaults > Dictation > Voxtype stays ungated" \
-    || fail "Setup > Defaults > Dictation > Voxtype stays ungated"
+  # On an immutable host the RPM is not there to install, so the same gate hides
+  # the row: the click could only refuse. Baking voxtype into the image is what
+  # brings the row back.
+  answers=$(OMARCHY_DISTRO=fedora-ostree XDG_RUNTIME_DIR="" PATH="$ROOT/bin:$PATH" bash -c "$dictation_guards" 2>/dev/null | sort | tr '\n' ' ')
+  [[ $answers == *"setup.default.dictation.voxtype:w:0"* ]] \
+    && pass "fedora-ostree: Voxtype hides until the image carries it" \
+    || fail "fedora-ostree: Voxtype hides until the image carries it (got: $answers)"
 else
   pass "# SKIP superwhisper menu gate: node not available"
 fi

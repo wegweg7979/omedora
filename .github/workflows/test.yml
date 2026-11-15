@@ -105,6 +105,9 @@ jobs:
       - name: Run byte-identity audit (upstream files are additive-only)
         run: bash test/byte-identity-test.sh
 
+      - name: Run shipped agents-skill Fedora guard
+        run: bash test/agents-skill-fedora-test.sh
+
       - name: Run archism-gating test
         run: bash test/archism-gating-test.sh
 

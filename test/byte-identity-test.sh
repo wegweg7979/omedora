@@ -196,6 +196,26 @@ ALLOW["default/omarchy/omarchy-menu.jsonc"]='  "install.aur": {"icon":"󰣇","la
   "install.style.font.victor": {"icon":"","label":"Victor Code","action":"omarchy-install-font '"'"'Victor Code'"'"' ttf-victor-mono-nerd '"'"'VictorMono Nerd Font'"'"'"},
   "install.style.font.bitstream": {"icon":"","label":"Bitstream Vera Mono","action":"omarchy-install-font '"'"'Bitstream Vera Code'"'"' ttf-bitstream-vera-mono-nerd '"'"'BitstromWera Nerd Font'"'"'"},
   "install.style.font.iosevka": {"icon":"","label":"Iosevka","action":"omarchy-install-font Iosevka ttf-iosevka-nerd '"'"'Iosevka Nerd Font Mono'"'"'"},'
+# default/agents/skills/omarchy/SKILL.md: the shipped agent skill sent Fedora users
+# (mutable and bootc alike) to pacman/AUR for package installs, promised a writable
+# /usr, and reset configs with a bare `omarchy reinstall` — all false or dead ends on
+# the Fedora port, where `omarchy pkg add <rpm>` exits 1 asking for an image bake and
+# the reinstall group ships only `configs`. The Arch-only lines are REPLACED in place
+# by distro-aware text (`omarchy-distro` table + the Fedora paragraphs) instead of
+# being qualified in an appended section: this skill is read in pieces, so a
+# contradiction left in the middle ("| **Arch Linux** | Base OS |", the AUR fallback
+# in the decision framework) is worse than the audit churn. Lines below are the exact
+# upstream texts the Fedora text replaces. Unwind when the pin's skill is itself
+# distro-aware.
+ALLOW["default/agents/skills/omarchy/SKILL.md"]='Manage [Omarchy](https://omarchy.org/) Linux systems - a beautiful, fun, agentic Arch Linux distribution with Hyprland.
+This directory is owned by the omarchy package. Any local changes will be
+overwritten on the next `omarchy update`.
+privileged work. Omarchy may grant passwordless `sudo` access to particular
+| **Arch Linux** | Base OS | `/etc/`, `~/.config/` |
+omarchy update                  # Full system update
+omarchy reinstall
+5. **Is it a package install?** Use `omarchy pkg add <pkgs...>` (or `omarchy pkg aur add <pkgs...>` for AUR-only packages)'
+
 # --- the audit ---------------------------------------------------------------
 # Modified upstream files = files that differ from the pin AND exist on the pin
 # (so omedora-ADDED files like bin/omedora-* are out of scope — they have no

@@ -3,6 +3,25 @@
 Read this when the user wants to report an Omarchy bug, suggest a feature, or
 contribute a fix upstream.
 
+## Fedora hosts (omedora / hurunagus): route by what is broken
+
+This checkout IS the Fedora port, so the target is not always upstream:
+
+| Broken | Where it belongs |
+|--------|------------------|
+| Omarchy itself on Arch — shell, menu, Hyprland defaults, upstream behavior | `omacom/omarchy`, as below |
+| The port: a `bin/fedora/` or `bin/omarchy-ostree/` path, an `install/packages/fedora.toml` mapping, a migration's Fedora arm, the distro dispatch | **this repository**, `wegweg7979/omedora` |
+| The image: what is baked (packages, COPR payload, first-boot provisioning, drivers, kernel) | the image repo, e.g. `wegweg7979/hurunagus-hyprland` |
+
+On a bootc image `/usr/share/omarchy` is read-only and holds the *installed* copy, so a
+fix is real only once it is in this repository, built into a new `omedora-settings` RPM,
+baked into an image and rebased. Report the version you saw (`omarchy version` on the host
+runs the shipped copy, not your checkout) together with the deployment (`rpm-ostree
+status`) — a stale deployment explains most "but I already fixed that" reports.
+
+Development conventions for the port are this repository's own: `AGENTS.md` plus the
+`omedora/` docs (`README.md`, `architecture.md`, `packages.md`).
+
 Omarchy lives at https://github.com/omacom/omarchy. Route requests to the
 right place:
 
@@ -57,6 +76,10 @@ Never develop against `/usr/share/omarchy`. Clone a working copy instead:
 gh repo fork omacom/omarchy --clone
 cd omarchy
 ```
+
+Fixing the **port** instead? Clone this repository (`wegweg7979/omedora`) — the same rule
+applies: never develop against `/usr/share/omarchy`. A distro sibling (`bin/fedora/`,
+`bin/omarchy-ostree/`) is a change to the port, and belongs here, not in an upstream PR.
 
 Follow the repository's own `AGENTS.md` for style, testing, and commit
 conventions — it is the authority on contributions. Keep commits atomic, run

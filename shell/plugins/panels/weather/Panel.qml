@@ -209,7 +209,11 @@ Panel {
       + "&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,is_day"
       + "&forecast_days=4"
       + "&timezone=auto"
-    dailyForecastProc.command = ["curl", "-fsS", "--max-time", "5", url]
+    // Open-Meteo's edge answers 403 to curl's own User-Agent when the request
+    // carries timezone=auto, which leaves the panel with no Open-Meteo data at
+    // all. Identify the client instead. Local carry: drop once upstream sends a
+    // User-Agent of its own.
+    dailyForecastProc.command = ["curl", "-fsS", "--max-time", "5", "-A", "omarchy-weather/1.0", url]
     dailyForecastProc.running = true
   }
 
@@ -309,7 +313,8 @@ Panel {
 
   function startGeocode() {
     geocodeActiveQuery = geocodePendingQuery
-    geocodeProc.command = ["curl", "-fsS", "--max-time", "5",
+    // Same client identification as the forecast fetch above.
+    geocodeProc.command = ["curl", "-fsS", "--max-time", "5", "-A", "omarchy-weather/1.0",
       "https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(geocodeActiveQuery) + "&count=5&language=en&format=json"]
     geocodeProc.running = true
   }

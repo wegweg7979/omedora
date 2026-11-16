@@ -366,6 +366,18 @@ CARRIED["test/shell.d/launch-about-test.sh"]='tests for measuring a coloured log
 CARRIED["bin/omarchy-branding-about-animation"]='the About sheen animates a logo that carries its own colour: a row is split into its SGR runs, only the cells the band covers are repainted white, and a run the band cuts through is given its colour back. A logo with no colour of its own takes upstream''s slice byte for byte, and everything upstream refused (wide glyphs, tabs, placeholders, escapes it cannot measure) is still refused'
 CARRIED["test/shell.d/branding-about-animation-test.sh"]='tests for the coloured-logo sheen: the escape-refusal case became an animation case, plus per-cell colour and glyph invariants across every frame'
 
+# .github/workflows/i18n-sync.yml is upstream's daily translation sync, and it is
+# hardcoded to a `quattro` branch: the checkout ref, the PR base, and the push
+# trigger. Neither this fork nor upstream has that branch (upstream's omedora-4
+# carries the same stale refs, so its own scheduled run fails identically), and
+# the job additionally needs MUSE_API_KEY and I18N_SYNC_TOKEN, which this repo
+# does not carry — so it can never succeed here; it only added a red run a day,
+# which trains everyone to ignore red. Translations arrive with each upstream
+# rebase, and i18n-check.yml still guards catalog consistency on PRs. Restore it
+# from upstream (adding the two secrets first) if the fork should ever translate
+# on its own.
+CARRIED[".github/workflows/i18n-sync.yml"]='upstream'\''s daily translation sync, hardcoded to a quattro branch neither repo has, and needing two secrets this repo does not carry'
+
 modified_upstream=()
 while IFS= read -r f; do
   [[ -n $f ]] || continue

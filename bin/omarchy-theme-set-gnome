@@ -60,11 +60,12 @@ else
   # choosers, anything painted through xdg-desktop-portal-gtk) while
   # GTK4/libadwaita apps stayed dark off color-scheme, which is what reads as
   # "only some dialogs are light". Fedora names the sheet GTK3 can resolve
-  # instead: adw-gtk3-theme is the libadwaita look ported to GTK 3, with plain
-  # Adwaita as the fallback wherever it is not installed (mutable Fedora, an
-  # older image). adw-gtk3 ships gtk-3.0 files only, so GTK4 keeps Adwaita and
-  # follows color-scheme regardless. Arch keeps upstream's line verbatim (the
-  # relocation is allowlisted in test/byte-identity-test.sh).
+  # instead: adw-gtk3-theme is the libadwaita look ported to GTK 3. It ships a
+  # gtk-3.0 AND a gtk-4.0 sheet (verified: /usr/share/themes/adw-gtk3-dark/gtk-4.0
+  # holds 20 files), so naming it serves both toolkits; only where it is not
+  # installed (mutable Fedora, an older image) does plain Adwaita become the
+  # fallback and GTK4 follow color-scheme. Arch keeps upstream's line verbatim
+  # (the relocation is allowlisted in test/byte-identity-test.sh).
   if [[ $(omarchy-distro) == arch ]]; then
     gsettings set org.gnome.desktop.interface gtk-theme "Adwaita-dark"
     gtk_theme_name=Adwaita-dark

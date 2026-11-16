@@ -17,12 +17,56 @@ COLORS_FILE="$THEME_DIR/colors.toml"
 # legacy light.mode marker beside it, or background luminance for user themes.
 mode=$(omarchy-theme-color --file "$COLORS_FILE" mode)
 
+# GTK's dark variant has to be requested through GTK's own settings file on
+# Fedora: no dconf schema carries the flag (gtk3/gtk4 ship no settings schema for
+# it) and a bare Hyprland session runs no XSETTINGS daemon to supply it. Rewrite
+# ONLY that key — a user's font/theme keys in this file must survive a theme set.
+set_gtk_prefer_dark() { # $1 = 3.0|4.0   $2 = 0|1
+  local file="$HOME/.config/gtk-$1/settings.ini"
+  mkdir -p "${file%/*}"
+  if [[ ! -f $file ]]; then
+    printf '[Settings]\n' >"$file"
+  elif ! grep -q '^\[Settings\]' "$file"; then
+    { printf '[Settings]\n'; cat "$file"; } >"$file.tmp" && mv "$file.tmp" "$file"
+  fi
+  if grep -q '^gtk-application-prefer-dark-theme=' "$file"; then
+    sed -i "s|^gtk-application-prefer-dark-theme=.*|gtk-application-prefer-dark-theme=$2|" "$file"
+  else
+    sed -i "/^\[Settings\]/a gtk-application-prefer-dark-theme=$2" "$file"
+  fi
+}
+
 if [[ $mode == "light" ]]; then
   gsettings set org.gnome.desktop.interface color-scheme "prefer-light"
   gsettings set org.gnome.desktop.interface gtk-theme "Adwaita"
 else
   gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
-  gsettings set org.gnome.desktop.interface gtk-theme "Adwaita-dark"
+  # Fedora: "Adwaita-dark" is not a resolvable GTK theme NAME for GTK 3.24 — it
+  # derives the dark variant itself, looks for "Adwaita-dark-dark", misses, and
+  # silently renders LIGHT Adwaita. Every GTK3 window then looks light (dialogs,
+  # file choosers, anything painted through xdg-desktop-portal-gtk) while
+  # GTK4/libadwaita apps stay dark off color-scheme, which is what makes this read
+  # as "only some dialogs are light". The resolvable name goes in dconf on Fedora
+  # and the VARIANT comes from the GTK flag written below; Arch keeps upstream's
+  # value byte-for-byte (test/byte-identity-test.sh allowlists the relocation).
+  if [[ $(omarchy-distro) == arch ]]; then
+    gsettings set org.gnome.desktop.interface gtk-theme "Adwaita-dark"
+  else
+    gsettings set org.gnome.desktop.interface gtk-theme "Adwaita"
+  fi
+fi
+
+# Fedora: mirror the same choice into the GTK settings files read when no
+# XSETTINGS daemon is running. Arch is untouched — gnome-settings-daemon and the
+# XSETTINGS route cover the flag there, as upstream assumes.
+if [[ $(omarchy-distro) != arch ]]; then
+  if [[ $mode == "light" ]]; then
+    set_gtk_prefer_dark 3.0 0
+    set_gtk_prefer_dark 4.0 0
+  else
+    set_gtk_prefer_dark 3.0 1
+    set_gtk_prefer_dark 4.0 1
+  fi
 fi
 
 # Change gnome icon theme color

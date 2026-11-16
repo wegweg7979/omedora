@@ -270,6 +270,14 @@ ALLOW["bin/omarchy-system-logout"]='# omarchy:aliases=omarchy logout'
 ALLOW["bin/omarchy-system-reboot"]='# omarchy:aliases=omarchy reboot'
 ALLOW["bin/omarchy-system-shutdown"]='# omarchy:aliases=omarchy shutdown'
 
+# bin/omarchy-theme-set-gnome: the dark-theme line moves one level deeper under a
+# distro branch. "Adwaita-dark" is not a resolvable GTK theme NAME for GTK 3.24
+# (it derives the variant itself, looks for "Adwaita-dark-dark", misses, and
+# silently renders light Adwaita), so Fedora sets the resolvable name and carries
+# the dark VARIANT in the GTK settings files, which is the only route available
+# where no XSETTINGS daemon runs; Arch keeps the upstream line verbatim.
+ALLOW["bin/omarchy-theme-set-gnome"]='  gsettings set org.gnome.desktop.interface gtk-theme "Adwaita-dark"'
+
 # test/cli: the Arch contract suite upstream ships asserts on command families
 # the port pruned (gaming xbox-cloud/controllers/geforce-now/gpu-lib32, the dev
 # benchmark CLI, and omarchy-refresh-pacman's sudo metadata). Each assertion named

@@ -25,7 +25,38 @@ Consequences that bite:
 - **The COPR dispatch needs an explicit package list** (a blank list builds nothing): for a
   skill-only change that is `omedora-settings`.
 - Current names shipped: `omarchy` (the end-user customization skill, with its six topic
-  guides), `omarchy-app`, `diagnose-crash`.
+  guides), `omarchy-app`, `diagnose-crash` — plus the local set kept in step by the weekly
+  sync below: `machine-health-check`, `hyprland-config`, `hyprland-plugins`, `quickshell`,
+  `fedora-atomic-hurunagus`, `omarchy-bar-modules`, `wifi-survey`.
+
+## Publishing local skills into the payload (the weekly sync)
+
+Skills this agent develops on a host live in `~/.hermes/skills/`; the payload ones show up
+in that directory as **symlinks** into `/usr/share/omarchy/…`, so only the *real*
+directories are the agent's own work — and only those can be published. That is automated:
+
+- `~/.hermes/scripts/omedora-skill-sync.py` scrubs, writes into
+  `~/omedora-inspect/default/agents/skills/<name>/`, and commits locally. It **never
+  pushes** — push, COPR rebuild and rebase stay with the user.
+- allowlist `~/.hermes/state/omedora-skill-sync/allowlist.txt` (`source -> target-name`;
+  a category path like `hyprland/omarchy-bar-modules` maps to a flat payload dir, because
+  `omarchy-provision-user` only loops one level). Manifest and per-run reports sit beside it.
+- A Hermes cron job (Mondays 20:00 local, the day before the 06:00 UTC Tuesday build) runs
+  it, reports what moved, and suggests up to 3 new allowlist candidates.
+
+**Two-phase and fail-closed:** the entire plan is built in memory first, and any problem
+aborts *before a byte is written* — never a half-scrubbed file left in the tree. The
+blocking gates are: not on the allowlist (never considered at all), an identifier that
+survives the scrub, and a payload file hand-edited in the repo since the last sync
+(compared against `manifest.json`, so a human's edit is never clobbered).
+
+Scrubbed to placeholders: LAN IPs, `/var/home/<user>`, bare usernames in prose and
+commands, email addresses, Slack IDs, and the hostnames workstation/desktop/laptop →
+workstation/desktop/laptop. Kept on purpose: the hostname `mini` (a generic word) and the
+repo's own GitHub handle. **Prose is not rewritten, only identifier tokens are** — so read
+a big skill by eye before its first push. Pitfall in the scrubber itself: a bare
+`[DCGUT][0-9A-Z]{8,11}` Slack-id pattern also matches ordinary uppercase words
+(`GENERATED`, `DISCONNECTED`), so the rule must additionally demand ≥2 digits in the token.
 
 ## Byte-identity: these files are upstream files
 

@@ -187,6 +187,21 @@ The tag-archive ritual (`Version:` bump → commit → `git tag` → `bin/spec-s
 - `.../fedora-<ver>-x86_64/<name>-<ver>-<rel>.rpm` answers 500. The RPM lives under
   `Packages/<first-letter>/`; get the exact href from `repodata/repomd.xml` →
   `primary.xml.gz` → `<location href="Packages/…">`. Follow redirects (`curl -L`).
+- **The results directory is neither a repo nor a scrapeable index.** Under
+  `copr-be.cloud.fedoraproject.org/results/<owner>/<project>/<chroot>/` the RPMs sit in
+  `Packages/<first-letter>/`, and the sibling entries are **per-build directories**
+  (`<build_id>-<package>/`) holding logs, the spec and a `success` marker — never an
+  `.rpm`. That index is also served with **single-quoted** `href='…'` attributes, so a
+  `href="…"` scrape matches nothing and reads exactly like "the package was never built".
+  Resolve the URL from repo metadata (`dnf5 repoquery … %{location}`) or ask the API what a
+  build produced (`GET /api_3/build/built-packages/{id}`); keep HTML scraping out of the
+  loop. Note `GET /api_3/build/{id}` returns just the chroot **names**, and
+  `api_3/build/list?build_id=` answers 400 — the id is a path segment, not a query arg.
+- **Read the NEVRA to prove WHICH commit built the RPM.** The payload specs embed the git
+  commit in the release (`…-1.202611181026gitd0068c9.fc45`), so after a push, matching that
+  hash to HEAD is real proof the artifact came from your commit — far stronger than the
+  newest build showing green, and it is the same string `rpm -q <pkg>` prints on a host, so
+  it tells you which payload change a machine is actually running.
 
 Verify the artifact rather than trusting the build's "succeeded":
 `rpm -qip` shows `Release: …fc45`, the license, and the COPR signature

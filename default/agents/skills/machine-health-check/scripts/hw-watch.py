@@ -161,7 +161,12 @@ def main():
         for f in sorted(nct.glob("in*_input")):
             v = read(f)
             if v is not None:
-                rails["rail_" + f.name.replace("_input", "")] = round(v, 4)
+                # Nuvoton Super-IO channels report MILLIVOLTS (3344 for a 3.3 V rail),
+                # so normalise to volts here — otherwise both the thresholds below and
+                # the units printed in the alert text are wrong. Anything above 100 is
+                # a millivolt reading; a real 12 V/5 V rail never reads below that.
+                volts = v / 1000.0 if v > 100 else v
+                rails["railv_" + f.name.replace("_input", "")] = round(volts, 4)
 
     ssd_c = round(read(nvme / "temp1_input", default=0.0) / 1000, 1) if nvme else None
     ssd_alarm = int(read(nvme / "temp1_alarm", default=0) or 0) if nvme else 0
@@ -251,12 +256,12 @@ def main():
         # from a previously tight baseline still alerts, because that baseline is tight.
         spread = (max(vals) - min(vals)) / mean * 100
         if spread >= NOISY_SPREAD_PCT:
-            noisy.append(f"{k.replace('rail_', '')} (swings {spread:.0f}%)")
+            noisy.append(f"{k.replace('railv_', '')} (swings {spread:.0f}%)")
             continue
         lim = RAIL_JUMP_PCT if mean > 0.5 else RAIL_JUMP_PCT_SMALL
         if abs(v - mean) / mean * 100 >= lim:
             found.append((f"rail_{k}",
-                          f"{k.replace('rail_', '')} {v:.3f}V is "
+                          f"{k.replace('railv_', '')} {v:.3f}V is "
                           f"{abs(v - mean) / mean * 100:.0f}% off its baseline "
                           f"({mean:.3f}V) - rail drift"))
 
@@ -315,7 +320,7 @@ def main():
     with open(LOG, "a") as fh:
         fh.write(f"{ts} pkg={pkg_c} core_max={core_max} ssd={ssd_c} thr_pkg={thr_pkg} "
                  f"thr_core={thr_core} load={load1} w={watts} rails={len(rails)} "
-                 f"alerts={len(found)} noisy={'|'.join(noisy)}\n")
+                 f"alerts={len(found)} printed={len(out_lines)} noisy={'|'.join(noisy)}\n")
 
     if out_lines or cleared:
         print(f"HARDWARE WATCH - workstation (NAB9) - {now.strftime('%a %d %b %H:%M')}")

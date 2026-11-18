@@ -22,8 +22,14 @@ Consequences that bite:
   host rebases.** The host's `/usr/share/omarchy/...` copy is the *installed* one, and
   `~/.hermes/skills/<name>` is a symlink into it — so the copy this agent loads is the
   baked one, not the checkout. Rebase is the user's step.
-- **The COPR dispatch needs an explicit package list** (a blank list builds nothing): for a
-  skill-only change that is `omedora-settings`.
+- **A payload push rebuilds the RPM by itself — never hand over a dispatch step.**
+  `copr-build.yml` fires on push to `omedora-4` with a `paths:` filter that includes
+  `default/**`, the self-sourced packages' payload, and submits **both** `omedora` and
+  `omedora-settings` — provided the `COPR_API_TOKEN` secret exists (it does; without it the
+  job no-ops so forks don't fail). A manual `workflow_dispatch` *does* need an explicit
+  package list (a blank one builds nothing) and is only for rebuilding something the push
+  did not touch. Check `gh run list --workflow=copr-build.yml` before telling the user which
+  of the two applies.
 - Current names shipped: `omarchy` (the end-user customization skill, with its six topic
   guides), `omarchy-app`, `diagnose-crash` — plus the local set kept in step by the weekly
   sync below: `machine-health-check`, `hyprland-config`, `hyprland-plugins`, `quickshell`,
@@ -57,6 +63,28 @@ repo's own GitHub handle. **Prose is not rewritten, only identifier tokens are**
 a big skill by eye before its first push. Pitfall in the scrubber itself: a bare
 `[DCGUT][0-9A-Z]{8,11}` Slack-id pattern also matches ordinary uppercase words
 (`GENERATED`, `DISCONNECTED`), so the rule must additionally demand ≥2 digits in the token.
+
+## What a push actually triggers (check before you push)
+
+Two of the three workflows in `.github/workflows/` fire on a push to `omedora-4`, so read
+what a change will set off *before* pushing it — and know that the payload pushes are
+self-driving (see the dispatch bullet above).
+
+- **`test.yml` runs an explicit list of tests by name — there is no glob.** So adding
+  `.sh`/`.py`/`.md` files under the payload cannot turn CI red on its own: no shellcheck,
+  no markdownlint, no "lint everything under X" step exists to satisfy. Confirm that from
+  the workflow file rather than assuming new scripts must pass a linter.
+- **The tests that do touch `default/agents/skills/` assert by NAME, not by enumeration:**
+  `test/agents-skill-fedora-test.sh` reads `default/agents/skills/omarchy` only, and
+  `test/shell.d/provision-user-test.sh` loops a fixed pair (`omarchy diagnose-crash`). So a
+  new skill breaks neither — and the converse is the real point: **a new skill is covered by
+  no test at all**, so its correctness rests on review before the push, not on a green run.
+- **`byte-identity-test.sh` diffs *modified upstream* files only.** Brand-new files under a
+  payload directory are ignored: additions are safe, and it is deleting or rewriting an
+  upstream line that needs an `ALLOW[…]` entry.
+- The COPR rebuild of a noarch package can take minutes and, once, the sibling `omedora`
+  package sat in `running` long past its usual few minutes — a slow build there is not a
+  failure, and it cannot block the skills, which ride in `omedora-settings`.
 
 ## Byte-identity: these files are upstream files
 

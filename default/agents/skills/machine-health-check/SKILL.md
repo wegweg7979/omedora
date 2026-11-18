@@ -171,17 +171,58 @@ stdout delivers nothing**. Each tick appends to `~/.hermes/state/hw-watch/hw.csv
 package/core temp, fan RPM, PROCHOT + core-throttle counters, NVMe temp + alarm, RAPL
 watts, the CPU power limits, and every NCT6798 rail. It prints an alert block only on a
 threshold trip — keyed per category, re-printed at most hourly, with a one-off "ok now"
-line when a condition clears. Rails are judged against their **own rolling baseline**
+line when a condition clears.
+
+**Two pitfalls that produced false alerts before they were fixed — do not reintroduce
+them:**
+
+- **Nuvoton Super-IO `in*_input` channels report MILLIVOLTS** (3344 for a 3.3 V rail,
+  112 for a floating one). Normalise to volts at read time. A percentage threshold applied
+  to raw millivolts silently divides the channels into the wrong bands — here every
+  channel read as ">0.5 V", so sub-half-volt channels got the tight 8 % drift threshold
+  instead of the 20 % one, and a floating channel tripped it.
+- **A channel that swings hard inside its own baseline is floating/unconnected, not a
+  rail.** Judge stability *first*: compute the spread across the baseline window and skip
+  any channel above ~25 %, reporting it as "not alerting on (floating/unnamed channel)"
+  instead. Real rails stay tight, so a genuine sag still fires (it steps away from a
+  previously tight baseline); a chronic wanderer never will. On the NAB9, `in0` swings
+  56–72 % and `in11` ~14 % — both are unconnected inputs, not 12 V/5 V rails.
+
+Rails are judged against their **own rolling baseline**
 (~8 h), never against assumed nominal values: this board's channels are unlabeled and
-`in8` legitimately sits ~0.2 V under the other 3.3 V channels. `HW_WATCH_FORCE_ALERT=1`
-exercises the delivery path without touching thresholds.
+`in8` legitimately sits ~0.2 V under the other 3.3 V channels. **Judge stability before
+drift**: a channel that swings more than ~25% *within its own baseline* is floating or
+unconnected (this board's `in0` alternates between ~344 and ~664 mV), so log it, name it
+in the report as not-alerting, and never raise an alert on it — while a rail that steps
+away from a previously *tight* baseline still fires, because that baseline is tight. Skip
+that gate and one unnamed channel generates a permanent, hourly false "rail drift" alert.
+`HW_WATCH_FORCE_ALERT=1` exercises the delivery path without touching thresholds.
 
 The live job on `workstation` is `6af4c31a7352` ("workstation hardware health watch
-(NAB9)"): `every 5m`, `no_agent`, `deliver=origin` — so alerts land as a **note in that
-desktop chat, not a live push**, and a recurring job also runs once on return, which is
-what produces the first sample after an outage. Creation was verified end to end: the
-first tick fired 09:51:34 with `status ok` and a row in the CSV, stdout empty (so nothing
-was delivered).
+(NAB9)"): `every 5m`, `no_agent`, `deliver=origin,slack:<his DM channel id>`. A recurring
+job also runs once on return, which is what produces the first sample — and the
+unclean-boot alert — after an outage. Verify a new watch by its **effects**, never by the
+create call: the first tick must show `last_status: ok` in the job list *and* a new row in
+the CSV, with empty stdout (nothing delivered).
+
+**Detect the outage itself, not only its symptoms.** A threshold watcher is silent about
+a machine that *died* — which is the failure this host is actually at risk of. On that
+first tick after it returns, read the **previous** boot's final journal lines: a clean
+shutdown always ends in systemd's teardown (`Unmounting|Unmounted|Stopping|Stopped|Reached
+target|Deactivated|systemd-shutdown`), so anything else means the boot was cut off mid-
+message. Key it on `boot_id` and mark it **print-once** — it is a past event, not a live
+condition, and an hourly re-print of a historical cut is pure noise. Validate the
+predicate against real boots before trusting it: the cut boot flags, cleanly rebooted ones
+must not.
+
+**An alert nobody sees is not an alert.** `deliver=origin` on a desktop chat writes a
+*note into that chat's history*, not a live push — worthless while he is away, which is
+exactly when a hardware alert matters. Add his Slack DM (`deliver=origin,slack:<DM id>`) to
+anything that must reach him out of the house, then **prove the scheduled path** rather
+than assuming it: see `scripts/alert-delivery-probe.sh`. A manual `SEND_MESSAGE` proves
+the bot can post, NOT that the scheduler delivers — they are different code paths, and the
+probe is the only thing that exercises the second one. Read `last_status` and
+`last_delivery_error` from the job list, then remove the probe job.
 
 Be honest about its reach: it **cannot predict an instant capacitor failure**. What it
 gives you is a rail/temp record leading up to the next death (and a first tick after

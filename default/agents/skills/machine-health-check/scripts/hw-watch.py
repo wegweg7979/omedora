@@ -31,6 +31,8 @@ REALERT_MIN = 60.0        # re-print a still-active alert after this many minute
 BASELINE_N = 96           # ticks of history used as the rail/thermal baseline (~8h)
 RAIL_JUMP_PCT = 8.0       # % deviation from baseline for rails above 0.5 V
 RAIL_JUMP_PCT_SMALL = 20.0
+NOISY_SPREAD_PCT = 25.0   # a channel swinging this much inside its OWN baseline is
+                          # floating/unconnected — never alert on it
 PKG_ALERT_C = 92.0
 CORE_ALERT_C = 96.0
 SSD_ALERT_C = 70.0
@@ -40,6 +42,31 @@ PKG_IDLE_C = 80.0
 HW_PATTERN = (r"machine check|MCE|hardware error|AER:|PCIe Bus Error|I/O error|"
               r"nvme.*(error|reset|timeout)|thermal.*critical|"
               r"Core temperature above threshold|Package temperature above threshold")
+
+# A clean shutdown on this host always leaves systemd's teardown as the final
+# journal lines; an abrupt cut leaves whatever routine message was in flight.
+CLEAN_END = re.compile(r"Unmounting|Unmounted|Stopping|Stopped|Reached target|Deactivated|"
+                       r"systemd-shutdown|Shutting down|System is|Finalizing")
+ONCE_KEYS = ("unclean_boot:",)
+
+
+def previous_boot(prev_index=1):
+    """(unclean?, last_line, timestamp) for the previous boot on this host."""
+    try:
+        out = subprocess.run(
+            ["journalctl", "-b", f"-{prev_index}", "-n", "4", "-o", "short-iso", "--no-pager"],
+            capture_output=True, text=True, timeout=30).stdout.strip().splitlines()
+    except Exception as e:
+        return None, f"could not read the previous boot: {e}", ""
+    if not out:
+        return None, "no previous boot in the journal", ""
+    last = out[-1]
+    stamp = last.split(" ", 1)[0] if " " in last else ""
+    return (not CLEAN_END.search(last)), last[:170], stamp
+
+
+def boot_id():
+    return read("/proc/sys/kernel/random/boot_id", str, "") or "unknown"
 
 
 def read(path, cast=float, default=None):
@@ -210,13 +237,24 @@ def main():
         if fans.get("fan_fan2") == 0 and (pkg_c or 0) > 65:
             found.append(("fan_stall", f"fan2 stalled at 0 RPM with package at {pkg_c}C"))
 
+    noisy = []
     for k, v in rails.items():
         vals = col(k)
         if len(vals) < 6:
             continue
         mean = sum(vals) / len(vals)
+        if mean <= 0.05:
+            continue
+        # A real rail is stable across its own baseline; an unconnected/floating Super-IO
+        # input wanders (in0 here swings between ~344 and ~664 mV). Judge stability first,
+        # so a chronic wanderer is never reported as "drift" — while a rail that steps away
+        # from a previously tight baseline still alerts, because that baseline is tight.
+        spread = (max(vals) - min(vals)) / mean * 100
+        if spread >= NOISY_SPREAD_PCT:
+            noisy.append(f"{k.replace('rail_', '')} (swings {spread:.0f}%)")
+            continue
         lim = RAIL_JUMP_PCT if mean > 0.5 else RAIL_JUMP_PCT_SMALL
-        if mean > 0.05 and abs(v - mean) / mean * 100 >= lim:
+        if abs(v - mean) / mean * 100 >= lim:
             found.append((f"rail_{k}",
                           f"{k.replace('rail_', '')} {v:.3f}V is "
                           f"{abs(v - mean) / mean * 100:.0f}% off its baseline "
@@ -224,6 +262,12 @@ def main():
 
     for msg in journal_hw_errors():
         found.append((f"journal_{msg[:60]}", "kernel: " + msg))
+
+    unclean, last_line, stamp = previous_boot()
+    if unclean:
+        found.append((f"unclean_boot:{boot_id()}",
+                      f"previous boot ended with NO shutdown sequence ({stamp}): "
+                      f"{last_line!r} — hard power cut or hardware fault, not a clean reboot"))
 
     if os.environ.get("HW_WATCH_FORCE_ALERT"):
         found.append(("test", "TEST ALERT (forced) - delivery path check"))
@@ -255,7 +299,10 @@ def main():
     for k, msg in found:
         if k not in state["seen"] or (time.time() - state["printed"].get(k, 0)) > REALERT_MIN * 60:
             out_lines.append(msg)
-            state["printed"][k] = time.time()
+            # a once-only key (an unclean boot is a past event, not a live condition)
+            # must never re-print, even though the condition stays true all boot
+            state["printed"][k] = (time.time() + 10 ** 9 if k.startswith(ONCE_KEYS)
+                                   else time.time())
         state["seen"][k] = time.time()
     cleared = []
     for k in list(state["seen"]):
@@ -268,7 +315,7 @@ def main():
     with open(LOG, "a") as fh:
         fh.write(f"{ts} pkg={pkg_c} core_max={core_max} ssd={ssd_c} thr_pkg={thr_pkg} "
                  f"thr_core={thr_core} load={load1} w={watts} rails={len(rails)} "
-                 f"alerts={len(found)}\n")
+                 f"alerts={len(found)} noisy={'|'.join(noisy)}\n")
 
     if out_lines or cleared:
         print(f"HARDWARE WATCH - workstation (NAB9) - {now.strftime('%a %d %b %H:%M')}")
@@ -276,6 +323,9 @@ def main():
             print(f"  ! {m}")
         if cleared:
             print("  ok now: " + ", ".join(cleared))
+        if noisy:
+            print("  not alerting on (floating/unnamed channel, logged only): "
+                  + ", ".join(noisy))
         print(f"  state: pkg {pkg_c}C, hottest core {core_max}C, SSD {ssd_c}C, "
               f"fan {fans.get('fan_fan2', '?')} RPM, load {load1}, {watts}W, "
               f"throttle pkg/core {thr_pkg}/{thr_core} (CSV: {CSV})")
